@@ -5,6 +5,9 @@ export class User {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({ unique: true, nullable: true }) // buat nullable dulu jika sudah ada data lama
+  username?: string;
+
   @Column({ unique: true })
   email!: string;
 
