@@ -1,9 +1,11 @@
-import { IsEmail, IsString } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 export class LoginDto {
-  @IsEmail()
-  email: string;
+  @IsString()
+  @IsNotEmpty()
+  email!: string; // Kita tetap gunakan nama property 'email' agar tidak mengubah sisi Next.js, tapi isinya bisa email/username.
 
   @IsString()
-  password: string;
+  @IsNotEmpty()
+  password!: string;
 }

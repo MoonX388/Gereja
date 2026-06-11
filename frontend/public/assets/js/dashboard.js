@@ -1,265 +1,1183 @@
-const STORAGE_KEYS = { 
-    jemaat:'gd_jemaat', keluarga:'gd_keluarga', pelayan:'gd_pelayan', 
-    keuangan:'gd_keuangan', inventaris:'gd_inventaris', jadwal:'gd_jadwal', 
-    absensi:'gd_absensi', notifikasi:'gd_notifikasi', settings:'gd_settings' 
+const STORAGE_KEYS = {
+  jemaat: "gd_jemaat",
+  keluarga: "gd_keluarga",
+  pelayan: "gd_pelayan",
+  keuangan: "gd_keuangan",
+  inventaris: "gd_inventaris",
+  jadwal: "gd_jadwal",
+  absensi: "gd_absensi",
+  notifikasi: "gd_notifikasi",
+  settings: "gd_settings",
 };
 
-function getData(k){try{return JSON.parse(localStorage.getItem(k))||[]}catch(e){return[]}}
-
-function setData(k, d) {
-    localStorage.setItem(k, JSON.stringify(d));
-    // GLOBAL BRIDGE: Kirim data terbaru keluar ke Next.js parent wrapper
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-            action: 'DATA_CHANGED',
-            key: k,
-            payload: d
-        }, '*');
-    }
+function getData(k) {
+  try {
+    return JSON.parse(localStorage.getItem(k)) || [];
+  } catch (e) {
+    return [];
+  }
 }
 
-// LISTEN TO NEXT.JS PARENT COMMANDS (New Incoming Bridge)
-window.addEventListener('message', (event) => {
-    // Keamanan: Pastikan asal domain sama
-    if (event.origin !== window.location.origin) return;
-    
-    const { action, pageTarget } = event.data;
-    if (action === 'PINDAH_HALAMAN' && pageTarget) {
-        switchPage(pageTarget);
-    } else if (action === 'TRIGGER_REFRESH') {
-        refreshAll();
-        showToast('Data disinkronkan', 'success');
-    }
+function setData(k, d) {
+  localStorage.setItem(k, JSON.stringify(d));
+  // GLOBAL BRIDGE: Kirim data terbaru keluar ke Next.js parent wrapper
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(
+      {
+        action: "DATA_CHANGED",
+        key: k,
+        payload: d,
+      },
+      window.location.origin // Menggunakan origin yang aman
+    );
+  }
+}
+
+// LISTEN TO NEXT.JS PARENT COMMANDS (Incoming Bridge)
+window.addEventListener("message", (event) => {
+  // Keamanan: Pastikan asal domain sama
+  if (event.origin !== window.location.origin) return;
+
+  const { action, pageTarget } = event.data;
+  if (action === "PINDAH_HALAMAN" && pageTarget) {
+    switchPage(pageTarget);
+  } else if (action === "TRIGGER_REFRESH") {
+    refreshAll();
+    showToast("Data disinkronkan", "success");
+  }
 });
 
-function generateId(){return'id_'+Date.now()+'_'+Math.random().toString(36).substr(2,6)}
-const JABATAN_ORDER={'Pendeta':1,'Diakon':2,'Penatua':3,'Ketua Majelis':4,'Bendahara':5,'Sekretaris':6,'Staf Administrasi':7,'Staf Kebersihan':8,'Pengurus Pemuda':9,'Pengurus Sekolah Minggu':10,'Lainnya':11};
-const DEFAULT_SETTINGS={namaGereja:'Gereja Kasih Karunia',kodeGereja:'GKK-001',alamat:'Jl. Damai No.10',telp:'021-1234567',email:'info@gerejakasihkarunia.or.id',website:'www.gerejakasihkarunia.or.id',username:'admin',password:'admin123',notifWA:true,notifSMS:false,notifEmail:true,fontSize:'normal',mode:'light',waKey:'',smtpHost:'',emailFrom:''};
+function generateId() {
+  return "id_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+}
 
-function getSettings(){const s=localStorage.getItem('gd_settings');return s?{...DEFAULT_SETTINGS,...JSON.parse(s)}:DEFAULT_SETTINGS}
-function saveSettingsToStorage(s){localStorage.setItem('gd_settings',JSON.stringify(s))}
+const JABATAN_ORDER = {
+  Pendeta: 1,
+  Diakon: 2,
+  Penatua: 3,
+  "Ketua Majelis": 4,
+  Bendahara: 5,
+  Sekretaris: 6,
+  "Staf Administrasi": 7,
+  "Staf Kebersihan": 8,
+  "Pengurus Pemuda": 9,
+  "Pengurus Sekolah Minggu": 10,
+  Lainnya: 11,
+};
+
+const DEFAULT_SETTINGS = {
+  namaGereja: "Gereja Kasih Karunia",
+  kodeGereja: "GKK-001",
+  alamat: "Jl. Damai No.10",
+  telp: "021-1234567",
+  email: "info@gerejakasihkarunia.or.id",
+  website: "www.gerejakasihkarunia.or.id",
+  username: "admin",
+  password: "admin123",
+  notifWA: true,
+  notifSMS: false,
+  notifEmail: true,
+  fontSize: "normal",
+  mode: "light",
+  waKey: "",
+  smtpHost: "",
+  emailFrom: "",
+};
+
+function getSettings() {
+  const s = localStorage.getItem("gd_settings");
+  return s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
+}
+
+function saveSettingsToStorage(s) {
+  localStorage.setItem("gd_settings", JSON.stringify(s));
+}
 
 // Data Dummy Initializer
-(function(){
-    if(!getData('gd_jemaat').length) setData('gd_jemaat',[{id:generateId(),nama:'Yohanes Simanjuntak',gender:'Pria',baptis:'Sudah',tempatLahir:'Medan',tglLahir:'1975-03-15',alamat:'Jl. Mawar 12',telp:'0812-1111',nikah:'Menikah',pekerjaan:'Pendeta',status:'Aktif'},{id:generateId(),nama:'Maria Lestari',gender:'Wanita',baptis:'Sudah',tempatLahir:'Jakarta',tglLahir:'1980-07-22',alamat:'Kompleks Gereja',telp:'0813-3333',nikah:'Menikah',pekerjaan:'Bendahara',status:'Aktif'},{id:generateId(),nama:'Stefanus Widodo',gender:'Pria',baptis:'Sudah',tempatLahir:'Surabaya',tglLahir:'1978-11-05',alamat:'Jl. Anggrek 5',telp:'0856-2222',nikah:'Menikah',pekerjaan:'Wiraswasta',status:'Aktif'}]);
-    if(!getData('gd_pelayan').length) setData('gd_pelayan',[{id:generateId(),nama:'Yohanes Simanjuntak',jabatan:'Pendeta',departemen:'Umum',status:'Aktif'},{id:generateId(),nama:'Stefanus Widodo',jabatan:'Ketua Majelis',departemen:'Umum',status:'Aktif'},{id:generateId(),nama:'Maria Lestari',jabatan:'Bendahara',departemen:'Keuangan',status:'Aktif'}]);
-    if(!getData('gd_keuangan').length) setData('gd_keuangan',[{id:generateId(),jenis:'masuk',kategori:'Persembahan',jumlah:8500000,deskripsi:'Minggu ke-3',tanggal:'2026-05-25'},{id:generateId(),jenis:'keluar',kategori:'Operasional',jumlah:1200000,deskripsi:'Listrik',tanggal:'2026-05-22'}]);
-    if(!getData('gd_jadwal').length) setData('gd_jadwal',[{id:generateId(),nama:'Kebaktian Minggu',tanggal:'2026-06-01',waktu:'09:00',lokasi:'Ruang Ibadah',pj:'Pdt. Yohanes',status:'Terjadwal'}]);
-    if(!getData('gd_inventaris').length) setData('gd_inventaris',[{id:generateId(),nama:'Sound System',kategori:'Peralatan Ibadah',jumlah:2,harga:15000000,tahun:2023,kondisi:'Baik'}]);
-    if(!getData('gd_keluarga').length) setData('gd_keluarga',[{id:generateId(),noKK:'3201010101010001',kepala:'Yohanes Simanjuntak',alamat:'Jl. Mawar 12',jumlah:5}]);
-    if(!getData('gd_absensi').length) setData('gd_absensi',[{id:generateId(),kegiatan:'Kebaktian Minggu',nama:'Yohanes Simanjuntak',status:'Hadir',tanggal:'2026-05-25'}]);
-    if(!getData('gd_notifikasi').length) setData('gd_notifikasi',[{id:generateId(),judul:'Ibadah Minggu',pesan:'Ibadah minggu pukul 09.00 WIB',target:'Semua Jemaat',via:'WhatsApp',tanggal:'2026-05-24'}]);
+(function () {
+  if (!getData("gd_jemaat").length)
+    setData("gd_jemaat", [
+      { id: generateId(), nama: "Yohanes Simanjuntak", gender: "Pria", baptis: "Sudah", tempatLahir: "Medan", tglLahir: "1975-03-15", alamat: "Jl. Mawar 12", telp: "0812-1111", nikah: "Menikah", pekerjaan: "Pendeta", status: "Aktif" },
+      { id: generateId(), nama: "Maria Lestari", gender: "Wanita", baptis: "Sudah", tempatLahir: "Jakarta", tglLahir: "1980-07-22", alamat: "Kompleks Gereja", telp: "0813-3333", nikah: "Menikah", pekerjaan: "Bendahara", status: "Aktif" },
+      { id: generateId(), nama: "Stefanus Widodo", gender: "Pria", baptis: "Sudah", tempatLahir: "Surabaya", tglLahir: "1978-11-05", alamat: "Jl. Anggrek 5", telp: "0856-2222", nikah: "Menikah", pekerjaan: "Wiraswasta", status: "Aktif" },
+    ]);
+  if (!getData("gd_pelayan").length)
+    setData("gd_pelayan", [
+      { id: generateId(), nama: "Yohanes Simanjuntak", jabatan: "Pendeta", departemen: "Umum", status: "Aktif" },
+      { id: generateId(), nama: "Stefanus Widodo", jabatan: "Ketua Majelis", departemen: "Umum", status: "Aktif" },
+      { id: generateId(), nama: "Maria Lestari", jabatan: "Bendahara", departemen: "Keuangan", status: "Aktif" },
+    ]);
+  if (!getData("gd_keuangan").length)
+    setData("gd_keuangan", [
+      { id: generateId(), jenis: "masuk", kategori: "Persembahan", jumlah: 8500000, deskripsi: "Minggu ke-3", tanggal: "2026-05-25" },
+      { id: generateId(), jenis: "keluar", kategori: "Operasional", jumlah: 1200000, deskripsi: "Listrik", tanggal: "2026-05-22" },
+    ]);
+  if (!getData("gd_jadwal").length)
+    setData("gd_jadwal", [
+      { id: generateId(), nama: "Kebaktian Minggu", tanggal: "2026-06-01", waktu: "09:00", lokasi: "Ruang Ibadah", pj: "Pdt. Yohanes", status: "Terjadwal" },
+    ]);
+  if (!getData("gd_inventaris").length)
+    setData("gd_inventaris", [
+      { id: generateId(), nama: "Sound System", kategori: "Peralatan Ibadah", jumlah: 2, harga: 15000000, tahun: 2023, kondisi: "Baik" },
+    ]);
+  if (!getData("gd_keluarga").length)
+    setData("gd_keluarga", [
+      { id: generateId(), noKK: "3201010101010001", kepala: "Yohanes Simanjuntak", alamat: "Jl. Mawar 12", jumlah: 5 },
+    ]);
+  if (!getData("gd_absensi").length)
+    setData("gd_absensi", [
+      { id: generateId(), kegiatan: "Kebaktian Minggu", nama: "Yohanes Simanjuntak", status: "Hadir", tanggal: "2026-05-25" },
+    ]);
+  if (!getData("gd_notifikasi").length)
+    setData("gd_notifikasi", [
+      { id: generateId(), judul: "Ibadah Minggu", pesan: "Ibadah minggu pukul 09.00 WIB", target: "Semua Jemaat", via: "WhatsApp", tanggal: "2026-05-24" },
+    ]);
 })();
 
 // Toast Notification
-function showToast(m,t='info'){
-    const c=document.getElementById('toast-container'); if(!c) return;
-    const d=document.createElement('div'); d.className=`toast-item toast-${t}`;
-    let i='fa-circle-info'; if(t==='success') i='fa-circle-check'; else if(t==='error') i='fa-circle-exclamation';
-    d.innerHTML=`<i class="fa-solid ${i} toast-icon"></i><span class="toast-message">${m}</span><i class="fa-solid fa-xmark toast-close" onclick="this.parentElement.remove()"></i>`;
-    c.appendChild(d); setTimeout(()=>{if(d.parentElement){d.style.animation='fadeOut 0.3s ease forwards';setTimeout(()=>d.remove(),300)}},4000);
+function showToast(m, t = "info") {
+  const c = document.getElementById("toast-container");
+  if (!c) return;
+  const d = document.createElement("div");
+  d.className = `toast-item toast-${t}`;
+  let i = "fa-circle-info";
+  if (t === "success") i = "fa-circle-check";
+  else if (t === "error") i = "fa-circle-exclamation";
+  d.innerHTML = `<i class="fa-solid ${i} toast-icon"></i><span class="toast-message">${m}</span><i class="fa-solid fa-xmark toast-close" onclick="this.parentElement.remove()"></i>`;
+  c.appendChild(d);
+  setTimeout(() => {
+    if (d.parentElement) {
+      d.style.animation = "fadeOut 0.3s ease forwards";
+      setTimeout(() => d.remove(), 300);
+    }
+  }, 4000);
 }
 
 // Confirm Modal System
-function showConfirm(msg,onYes,onNo){
-    document.getElementById('confirmMessage').textContent=msg;
-    const m=document.getElementById('confirmModal'), y=document.getElementById('confirmYes'), n=document.getElementById('confirmNo');
-    const clean=()=>{m.classList.add('hidden');y.removeEventListener('click',hY);n.removeEventListener('click',hN)};
-    const hY=()=>{clean();if(onYes)onYes()}; const hN=()=>{clean();if(onNo)onNo()};
-    y.addEventListener('click',hY); n.addEventListener('click',hN); m.classList.remove('hidden');
+function showConfirm(msg, onYes, onNo) {
+  document.getElementById("confirmMessage").textContent = msg;
+  const m = document.getElementById("confirmModal"),
+    y = document.getElementById("confirmYes"),
+    n = document.getElementById("confirmNo");
+  const clean = () => {
+    m.classList.add("hidden");
+    y.removeEventListener("click", hY);
+    n.removeEventListener("click", hN);
+  };
+  const hY = () => { clean(); if (onYes) onYes(); };
+  const hN = () => { clean(); if (onNo) onNo(); };
+  y.addEventListener("click", hY);
+  n.addEventListener("click", hN);
+  m.classList.remove("hidden");
 }
 
-// Optimized Absolute Datepicker (Fixed scroll drift bug)
-let dpI=null, dpH=null, dpY, dpM;
-function openDatePicker(inp){
-    dpI=inp; dpH=document.getElementById(inp.id+'Value'); const t=new Date();
-    if(dpH&&dpH.value){const p=dpH.value.split('-'); dpY=+p[0]; dpM=p[1]-1}else{dpY=t.getFullYear(); dpM=t.getMonth()}
-    renderCalendar(dpY,dpM); const c=document.getElementById('datepickerContainer'); c.classList.remove('hidden'); c.style.display='block';
-    const r=inp.getBoundingClientRect(); 
-    c.style.position='absolute'; 
-    c.style.top=(window.scrollY + r.bottom + 5)+'px'; 
-    c.style.left=(window.scrollX + r.left)+'px';
-    document.addEventListener('click',closeDPOutside);
+// Optimized Absolute Datepicker
+let dpI = null, dpH = null, dpY, dpM;
+function openDatePicker(inp) {
+  dpI = inp;
+  dpH = document.getElementById(inp.id + "Value");
+  const t = new Date();
+  if (dpH && dpH.value) {
+    const p = dpH.value.split("-");
+    dpY = +p[0];
+    dpM = p[1] - 1;
+  } else {
+    dpY = t.getFullYear();
+    dpM = t.getMonth();
+  }
+  renderCalendar(dpY, dpM);
+  const c = document.getElementById("datepickerContainer");
+  c.classList.remove("hidden");
+  c.style.display = "block";
+  const r = inp.getBoundingClientRect();
+  c.style.position = "absolute";
+  c.style.top = window.scrollY + r.bottom + 5 + "px";
+  c.style.left = window.scrollX + r.left + "px";
+  document.addEventListener("click", closeDPOutside);
 }
-function closeDP(){ const c=document.getElementById('datepickerContainer'); if(c){c.style.display='none'; c.classList.add('hidden');} document.removeEventListener('click',closeDPOutside); dpI=dpH=null}
-function closeDPOutside(e){const c=document.getElementById('datepickerContainer'); if(dpI&&c&&!c.contains(e.target)&&e.target!==dpI)closeDP()}
-function renderCalendar(y,m){
-    dpY=y; dpM=m; document.getElementById('dpMonthYear').textContent=new Date(y,m).toLocaleDateString('id-ID',{month:'long',year:'numeric'});
-    const g=document.getElementById('dpGrid'); g.innerHTML=''; const fd=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate(), dpm=new Date(y,m,0).getDate();
-    for(let i=fd-1;i>=0;i--)g.innerHTML+=`<div class="day other-month">${dpm-i}</div>`;
-    for(let d=1;d<=dim;d++){const div=document.createElement('div'); div.className='day'; div.textContent=d;
-        if(dpH&&dpH.value){const[yy,mm,dd]=dpH.value.split('-').map(Number); if(yy===y&&mm===m+1&&dd===d)div.classList.add('selected')}
-        div.addEventListener('click',()=>{const sd=new Date(y,m,d); const yyyy=sd.getFullYear(), mm=String(sd.getMonth()+1).padStart(2,'0'), dd=String(d).padStart(2,'0');
-            dpI.value=`${dd}/${mm}/${yyyy}`; if(dpH)dpH.value=`${yyyy}-${mm}-${dd}`; closeDP();}); g.appendChild(div);}
-    const tc=fd+dim, rem=tc%7===0?0:7-(tc%7); for(let i=1;i<=rem;i++)g.innerHTML+=`<div class="day other-month">${i}</div>`;
+
+function closeDP() {
+  const c = document.getElementById("datepickerContainer");
+  if (c) {
+    c.style.display = "none";
+    c.classList.add("hidden");
+  }
+  document.removeEventListener("click", closeDPOutside);
+  dpI = dpH = null;
 }
-document.getElementById('dpPrev').addEventListener('click',(e)=>{e.stopPropagation(); if(dpM===0){dpY--;dpM=11}else dpM--; renderCalendar(dpY,dpM)});
-document.getElementById('dpNext').addEventListener('click',(e)=>{e.stopPropagation(); if(dpM===11){dpY++;dpM=0}else dpM++; renderCalendar(dpY,dpM)});
-function initDatePickers(){document.querySelectorAll('.datepicker-input').forEach(i=>i.addEventListener('click',e=>{e.stopPropagation(); openDatePicker(i)}))}
+
+function closeDPOutside(e) {
+  const c = document.getElementById("datepickerContainer");
+  if (dpI && c && !c.contains(e.target) && e.target !== dpI) closeDP();
+}
+
+function renderCalendar(y, m) {
+  dpY = y;
+  dpM = m;
+  document.getElementById("dpMonthYear").textContent = new Date(y, m).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const g = document.getElementById("dpGrid");
+  g.innerHTML = "";
+  const fd = new Date(y, m, 1).getDay(),
+    dim = new Date(y, m + 1, 0).getDate(),
+    dpm = new Date(y, m, 0).getDate();
+  for (let i = fd - 1; i >= 0; i--) g.innerHTML += `<div class="day other-month">${dpm - i}</div>`;
+  for (let d = 1; d <= dim; d++) {
+    const div = document.createElement("div");
+    div.className = "day";
+    div.textContent = d;
+    if (dpH && dpH.value) {
+      const [yy, mm, dd] = dpH.value.split("-").map(Number);
+      if (yy === y && mm === m + 1 && dd === d) div.classList.add("selected");
+    }
+    div.addEventListener("click", () => {
+      const sd = new Date(y, m, d);
+      const yyyy = sd.getFullYear(),
+        mm = String(sd.getMonth() + 1).padStart(2, "0"),
+        dd = String(d).padStart(2, "0");
+      dpI.value = `${dd}/${mm}/${yyyy}`;
+      if (dpH) dpH.value = `${yyyy}-${mm}-${dd}`;
+      closeDP();
+    });
+    g.appendChild(div);
+  }
+  const tc = fd + dim, rem = tc % 7 === 0 ? 0 : 7 - (tc % 7);
+  for (let i = 1; i <= rem; i++) g.innerHTML += `<div class="day other-month">${i}</div>`;
+}
+
+function initDatePickers() {
+  document.querySelectorAll(".datepicker-input").forEach((i) =>
+    i.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openDatePicker(i);
+    }),
+  );
+}
 
 // Timepicker Helpers
-function populateTimeSelects(){
-    document.querySelectorAll('select[id$="Jam"]').forEach(s=>{s.innerHTML='';for(let h=0;h<24;h++){const v=String(h).padStart(2,'0');s.innerHTML+=`<option value="${v}">${v}</option>`}});
-    document.querySelectorAll('select[id$="Menit"]').forEach(s=>{s.innerHTML='';for(let m=0;m<60;m++){const v=String(m).padStart(2,'0');s.innerHTML+=`<option value="${v}">${v}</option>`}});
+function populateTimeSelects() {
+  document.querySelectorAll('select[id$="Jam"]').forEach((s) => {
+    s.innerHTML = "";
+    for (let h = 0; h < 24; h++) {
+      const v = String(h).padStart(2, "0");
+      s.innerHTML += `<option value="${v}">${v}</option>`;
+    }
+  });
+  document.querySelectorAll('select[id$="Menit"]').forEach((s) => {
+    s.innerHTML = "";
+    for (let m = 0; m < 60; m++) {
+      const v = String(m).padStart(2, "0");
+      s.innerHTML += `<option value="${v}">${v}</option>`;
+    }
+  });
 }
 
 // Router & Structural View Component Controls
-function switchPage(p){
-    document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));
-    const t=document.getElementById('page-'+p); if(t)t.classList.remove('hidden');
-    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    const nav=document.querySelector(`.nav-item[data-page="${p}"]`); if(nav)nav.classList.add('active');
-    document.getElementById('pageTitle').textContent={dashboard:'Dashboard',jemaat:'Data Jemaat',keluarga:'Kartu Keluarga',pelayan:'Pelayan Gereja',keuangan:'Manajemen Keuangan',inventaris:'Inventaris',jadwal:'Jadwal Kegiatan',absensi:'Absensi',notifikasi:'Notifikasi',dokumen:'Dokumen',pengaturan:'Pengaturan'}[p]||'Dashboard';
-    if(p==='pengaturan')loadSettingsForm();
-    refreshAll(); if(window.innerWidth<1024)closeSidebar();
+function switchPage(p) {
+  console.log("Switching to page:", p);
+  document.querySelectorAll(".page").forEach((e) => e.classList.add("hidden"));
+  const t = document.getElementById("page-" + p);
+  if (t) t.classList.remove("hidden");
+  document.querySelectorAll(".nav-item").forEach((n) => n.classList.remove("active"));
+  const nav = document.querySelector(`.nav-item[data-page="${p}"]`);
+  if (nav) nav.classList.add("active");
+  document.getElementById("pageTitle").textContent =
+    {
+      dashboard: "Dashboard", jemaat: "Data Jemaat", keluarga: "Kartu Keluarga", pelayan: "Pelayan Gereja",
+      keuangan: "Manajemen Keuangan", inventaris: "Inventaris", jadwal: "Jadwal Kegiatan", absensi: "Absensi",
+      notifikasi: "Notifikasi", dokumen: "Dokumen", pengaturan: "Pengaturan",
+    }[p] || "Dashboard";
+  
+  if (p === "pengaturan") loadSettingsForm();
+  refreshAll();
+  if (window.innerWidth < 1024) closeSidebar();
 }
-function toggleSidebar(){const s=document.getElementById('sidebar'),o=document.getElementById('sidebar-overlay'),is=!s.classList.contains('-translate-x-full');if(is){s.classList.add('-translate-x-full');o.classList.add('hidden');document.body.classList.remove('overflow-hidden')}else{s.classList.remove('-translate-x-full');o.classList.remove('hidden');document.body.classList.add('overflow-hidden')}}
-function closeSidebar(){document.getElementById('sidebar').classList.add('-translate-x-full');document.getElementById('sidebar-overlay').classList.add('hidden');document.body.classList.remove('overflow-hidden')}
-document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',e=>switchPage(e.currentTarget.dataset.page)));
-function openModal(id){document.getElementById(id).classList.remove('hidden')}
-function closeModal(id){document.getElementById(id).classList.add('hidden')}
-document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.add('hidden')}));
-function populateSelect(sid,items,vf='nama',ae=false){const s=document.getElementById(sid);if(!s)return;let h=ae?'<option value="">-- Pilih --</option>':'';items.forEach(i=>h+=`<option value="${i[vf]}">${i[vf]}</option>`);s.innerHTML=h}
-function populatePJSelect(){const p=getData('gd_pelayan');let h='<option value="">-- Pilih --</option>';p.forEach(x=>h+=`<option value="${x.nama}">${x.nama} (${x.jabatan})</option>`);document.getElementById('jadwalPJ').innerHTML=h}
+
+function toggleSidebar() {
+  const s = document.getElementById("sidebar"),
+    o = document.getElementById("sidebar-overlay"),
+    is = !s.classList.contains("-translate-x-full");
+  if (is) {
+    s.classList.add("-translate-x-full");
+    o.classList.add("hidden");
+    document.body.classList.remove("overflow-hidden");
+  } else {
+    s.classList.remove("-translate-x-full");
+    o.classList.remove("hidden");
+    document.body.classList.add("overflow-hidden");
+  }
+}
+
+function closeSidebar() {
+  document.getElementById("sidebar").classList.add("-translate-x-full");
+  document.getElementById("sidebar-overlay").classList.add("hidden");
+  document.body.classList.remove("overflow-hidden");
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.remove("hidden");
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add("hidden");
+}
+
+function populateSelect(sid, items, vf = "nama", ae = false) {
+  const s = document.getElementById(sid);
+  if (!s) return;
+  let h = ae ? '<option value="">-- Pilih --</option>' : "";
+  items.forEach((i) => (h += `<option value="${i[vf]}">${i[vf]}</option>`));
+  s.innerHTML = h;
+}
+
+function populatePJSelect() {
+  const p = getData("gd_pelayan");
+  let h = '<option value="">-- Pilih --</option>';
+  p.forEach((x) => (h += `<option value="${x.nama}">${x.nama} (${x.jabatan})</option>`));
+  document.getElementById("jadwalPJ").innerHTML = h;
+}
 
 // CRUD - Jemaat Module
-function openJemaatModal(id=null){
-    document.getElementById('modalJemaatTitle').textContent=id?'Edit Jemaat':'Tambah Jemaat';document.getElementById('jemaatEditId').value=id||'';
-    if(id){const i=getData('gd_jemaat').find(x=>x.id===id);if(i){document.getElementById('jemaatNama').value=i.nama;document.getElementById('jemaatGender').value=i.gender;document.getElementById('jemaatBaptis').value=i.baptis;document.getElementById('jemaatTempatLahir').value=i.tempatLahir;const t=i.tglLahir||'';if(t&&t.match(/^\d{4}-\d{2}-\d{2}$/)){const[Y,M,D]=t.split('-');document.getElementById('jemaatTglLahir').value=`${D}/${M}/${Y}`;document.getElementById('jemaatTglLahirValue').value=t}else{document.getElementById('jemaatTglLahir').value='';document.getElementById('jemaatTglLahirValue').value=''}document.getElementById('jemaatAlamat').value=i.alamat;document.getElementById('jemaatTelp').value=i.telp;document.getElementById('jemaatNikah').value=i.nikah;document.getElementById('jemaatPekerjaan').value=i.pekerjaan;document.getElementById('jemaatStatus').value=i.status}}
-    else{['jemaatNama','jemaatTempatLahir','jemaatAlamat','jemaatTelp','jemaatPekerjaan'].forEach(f=>document.getElementById(f).value='');document.getElementById('jemaatTglLahir').value='';document.getElementById('jemaatTglLahirValue').value='';document.getElementById('jemaatGender').value='Pria';document.getElementById('jemaatBaptis').value='Sudah';document.getElementById('jemaatNikah').value='Belum Menikah';document.getElementById('jemaatStatus').value='Aktif'}
-    openModal('modalJemaat');
+function openJemaatModal(id = null) {
+  document.getElementById("modalJemaatTitle").textContent = id ? "Edit Jemaat" : "Tambah Jemaat";
+  document.getElementById("jemaatEditId").value = id || "";
+  if (id) {
+    const i = getData("gd_jemaat").find((x) => x.id === id);
+    if (i) {
+      document.getElementById("jemaatNama").value = i.nama;
+      document.getElementById("jemaatGender").value = i.gender;
+      document.getElementById("jemaatBaptis").value = i.baptis;
+      document.getElementById("jemaatTempatLahir").value = i.tempatLahir;
+      const t = i.tglLahir || "";
+      if (t && t.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [Y, M, D] = t.split("-");
+        document.getElementById("jemaatTglLahir").value = `${D}/${M}/${Y}`;
+        document.getElementById("jemaatTglLahirValue").value = t;
+      } else {
+        document.getElementById("jemaatTglLahir").value = "";
+        document.getElementById("jemaatTglLahirValue").value = "";
+      }
+      document.getElementById("jemaatAlamat").value = i.alamat;
+      document.getElementById("jemaatTelp").value = i.telp;
+      document.getElementById("jemaatNikah").value = i.nikah;
+      document.getElementById("jemaatPekerjaan").value = i.pekerjaan;
+      document.getElementById("jemaatStatus").value = i.status;
+    }
+  } else {
+    ["jemaatNama", "jemaatTempatLahir", "jemaatAlamat", "jemaatTelp", "jemaatPekerjaan"].forEach((f) => (document.getElementById(f).value = ""));
+    document.getElementById("jemaatTglLahir").value = "";
+    document.getElementById("jemaatTglLahirValue").value = "";
+    document.getElementById("jemaatGender").value = "Pria";
+    document.getElementById("jemaatBaptis").value = "Sudah";
+    document.getElementById("jemaatNikah").value = "Belum Menikah";
+    document.getElementById("jemaatStatus").value = "Aktif";
+  }
+  openModal("modalJemaat");
 }
-function saveJemaat(){
-    const eid=document.getElementById('jemaatEditId').value,nama=document.getElementById('jemaatNama').value.trim();if(!nama){showToast('Nama wajib diisi','error');return}
-    const item={id:eid||generateId(),nama,gender:document.getElementById('jemaatGender').value,baptis:document.getElementById('jemaatBaptis').value,tempatLahir:document.getElementById('jemaatTempatLahir').value,tglLahir:document.getElementById('jemaatTglLahirValue').value,alamat:document.getElementById('jemaatAlamat').value,telp:document.getElementById('jemaatTelp').value,nikah:document.getElementById('jemaatNikah').value,pekerjaan:document.getElementById('jemaatPekerjaan').value,status:document.getElementById('jemaatStatus').value};
-    let items=getData('gd_jemaat');if(eid)items=items.map(x=>x.id===eid?item:x);else items.unshift(item);setData('gd_jemaat',items);closeModal('modalJemaat');showToast(eid?'Data jemaat diperbarui':'Jemaat baru ditambahkan','success');refreshAll();
+
+function saveJemaat() {
+  const eid = document.getElementById("jemaatEditId").value,
+    nama = document.getElementById("jemaatNama").value.trim();
+  if (!nama) { showToast("Nama wajib diisi", "error"); return; }
+  const item = {
+    id: eid || generateId(), nama,
+    gender: document.getElementById("jemaatGender").value,
+    baptis: document.getElementById("jemaatBaptis").value,
+    tempatLahir: document.getElementById("jemaatTempatLahir").value,
+    tglLahir: document.getElementById("jemaatTglLahirValue").value,
+    alamat: document.getElementById("jemaatAlamat").value,
+    telp: document.getElementById("jemaatTelp").value,
+    nikah: document.getElementById("jemaatNikah").value,
+    pekerjaan: document.getElementById("jemaatPekerjaan").value,
+    status: document.getElementById("jemaatStatus").value,
+  };
+  let items = getData("gd_jemaat");
+  if (eid) items = items.map((x) => (x.id === eid ? item : x));
+  else items.unshift(item);
+  setData("gd_jemaat", items);
+  closeModal("modalJemaat");
+  showToast(eid ? "Data jemaat diperbarui" : "Jemaat baru ditambahkan", "success");
+  refreshAll();
 }
-function deleteJemaat(id){showConfirm('Hapus data jemaat ini?',()=>{setData('gd_jemaat',getData('gd_jemaat').filter(i=>i.id!==id));showToast('Data jemaat dihapus','success');refreshAll()})}
-function renderJemaatTable(){
-    const c=document.getElementById('jemaatTableContainer');if(!c)return;const s=(document.getElementById('jemaatSearch')?.value||'').toLowerCase();let items=getData('gd_jemaat');if(s)items=items.filter(i=>i.nama.toLowerCase().includes(s)||i.alamat?.toLowerCase().includes(s));
-    if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-users-slash text-5xl mb-3 block"></i><p class="text-lg">Belum ada data jemaat</p></div>';return}
-    let h='<table class="modern-table responsive-table"><thead><tr><th>Nama</th><th>Gender</th><th>Baptis</th><th>Lahir</th><th>Alamat</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
-    items.forEach(i=>{h+=`<tr><td data-label="Nama" class="font-semibold text-gray-800">${i.nama}</td><td data-label="Gender">${i.gender}</td><td data-label="Baptis">${i.baptis}</td><td data-label="Lahir">${i.tempatLahir?i.tempatLahir+', ':''}${i.tglLahir||'-'}</td><td data-label="Alamat" class="text-xs">${i.alamat||'-'}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${i.status==='Aktif'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-600'}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openJemaatModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteJemaat('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});
-    h+='</tbody></table>';c.innerHTML=h;populateSelect('keluargaKepala',getData('gd_jemaat'),'nama',true);populateSelect('pelayanNama',getData('gd_jemaat'),'nama',true);populateSelect('absensiNama',getData('gd_jemaat'),'nama');populatePJSelect();
+
+function deleteJemaat(id) {
+  showConfirm("Hapus data jemaat ini?", () => {
+    setData("gd_jemaat", getData("gd_jemaat").filter((i) => i.id !== id));
+    showToast("Data jemaat dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderJemaatTable() {
+  const c = document.getElementById("jemaatTableContainer");
+  if (!c) return;
+  const s = (document.getElementById("jemaatSearch")?.value || "").toLowerCase();
+  let items = getData("gd_jemaat");
+  if (s) items = items.filter((i) => i.nama.toLowerCase().includes(s) || i.alamat?.toLowerCase().includes(s));
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-users-slash text-5xl mb-3 block"></i><p class="text-lg">Belum ada data jemaat</p></div>';
+    return;
+  }
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>Nama</th><th>Gender</th><th>Baptis</th><th>Lahir</th><th>Alamat</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    h += `<tr><td data-label="Nama" class="font-semibold text-gray-800">${i.nama}</td><td data-label="Gender">${i.gender}</td><td data-label="Baptis">${i.baptis}</td><td data-label="Lahir">${i.tempatLahir ? i.tempatLahir + ", " : ""}${i.tglLahir || "-"}</td><td data-label="Alamat" class="text-xs">${i.alamat || "-"}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${i.status === "Aktif" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openJemaatModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteJemaat('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+  populateSelect("keluargaKepala", getData("gd_jemaat"), "nama", true);
+  populateSelect("pelayanNama", getData("gd_jemaat"), "nama", true);
+  populateSelect("absensiNama", getData("gd_jemaat"), "nama");
+  populatePJSelect();
 }
 
 // CRUD - Keluarga Module
-function openKeluargaModal(id=null){document.getElementById('modalKeluargaTitle').textContent=id?'Edit KK':'Tambah KK';document.getElementById('keluargaEditId').value=id||'';populateSelect('keluargaKepala',getData('gd_jemaat'),'nama',true);if(id){const i=getData('gd_keluarga').find(x=>x.id===id);if(i){document.getElementById('keluargaNoKK').value=i.noKK;document.getElementById('keluargaKepala').value=i.kepala;document.getElementById('keluargaAlamat').value=i.alamat;document.getElementById('keluargaJumlah').value=i.jumlah}}else{['keluargaNoKK','keluargaAlamat','keluargaJumlah'].forEach(f=>document.getElementById(f).value='')}openModal('modalKeluarga')}
-function saveKeluarga(){const eid=document.getElementById('keluargaEditId').value,nokk=document.getElementById('keluargaNoKK').value.trim();if(!nokk){showToast('No. KK wajib diisi','error');return}const item={id:eid||generateId(),noKK:nokk,kepala:document.getElementById('keluargaKepala').value,alamat:document.getElementById('keluargaAlamat').value,jumlah:parseInt(document.getElementById('keluargaJumlah').value)||1};let items=getData('gd_keluarga');if(eid)items=items.map(x=>x.id===eid?item:x);else items.unshift(item);setData('gd_keluarga',items);closeModal('modalKeluarga');showToast(eid?'KK diperbarui':'KK baru ditambahkan','success');refreshAll()}
-function deleteKeluarga(id){showConfirm('Hapus KK ini?',()=>{setData('gd_keluarga',getData('gd_keluarga').filter(i=>i.id!==id));showToast('KK dihapus','success');refreshAll()})}
-function renderKeluargaTable(){const c=document.getElementById('keluargaTableContainer');if(!c)return;const items=getData('gd_keluarga');if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-house-circle-xmark text-5xl mb-3 block"></i><p class="text-lg">Belum ada kartu keluarga</p></div>';return}let h='<table class="modern-table responsive-table"><thead><tr><th>No. KK</th><th>Kepala Keluarga</th><th>Alamat</th><th>Jumlah</th><th class="text-center">Aksi</th></tr></thead><tbody>';items.forEach(i=>{h+=`<tr><td data-label="No. KK" class="font-mono font-semibold">${i.noKK}</td><td data-label="Kepala">${i.kepala||'-'}</td><td data-label="Alamat" class="text-xs">${i.alamat||'-'}</td><td data-label="Jumlah">${i.jumlah} orang</td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openKeluargaModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteKeluarga('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});h+='</tbody></table>';c.innerHTML=h}
+function openKeluargaModal(id = null) {
+  document.getElementById("modalKeluargaTitle").textContent = id ? "Edit KK" : "Tambah KK";
+  document.getElementById("keluargaEditId").value = id || "";
+  populateSelect("keluargaKepala", getData("gd_jemaat"), "nama", true);
+  if (id) {
+    const i = getData("gd_keluarga").find((x) => x.id === id);
+    if (i) {
+      document.getElementById("keluargaNoKK").value = i.noKK;
+      document.getElementById("keluargaKepala").value = i.kepala;
+      document.getElementById("keluargaAlamat").value = i.alamat;
+      document.getElementById("keluargaJumlah").value = i.jumlah;
+    }
+  } else {
+    ["keluargaNoKK", "keluargaAlamat", "keluargaJumlah"].forEach((f) => (document.getElementById(f).value = ""));
+  }
+  openModal("modalKeluarga");
+}
+
+function saveKeluarga() {
+  const eid = document.getElementById("keluargaEditId").value,
+    nokk = document.getElementById("keluargaNoKK").value.trim();
+  if (!nokk) { showToast("No. KK wajib diisi", "error"); return; }
+  const item = {
+    id: eid || generateId(),
+    noKK: nokk,
+    kepala: document.getElementById("keluargaKepala").value,
+    alamat: document.getElementById("keluargaAlamat").value,
+    jumlah: parseInt(document.getElementById("keluargaJumlah").value) || 1,
+  };
+  let items = getData("gd_keluarga");
+  if (eid) items = items.map((x) => (x.id === eid ? item : x));
+  else items.unshift(item);
+  setData("gd_keluarga", items);
+  closeModal("modalKeluarga");
+  showToast(eid ? "KK diperbarui" : "KK baru ditambahkan", "success");
+  refreshAll();
+}
+
+function deleteKeluarga(id) {
+  showConfirm("Hapus KK ini?", () => {
+    setData("gd_keluarga", getData("gd_keluarga").filter((i) => i.id !== id));
+    showToast("KK dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderKeluargaTable() {
+  const c = document.getElementById("keluargaTableContainer");
+  if (!c) return;
+  const items = getData("gd_keluarga");
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-house-circle-xmark text-5xl mb-3 block"></i><p class="text-lg">Belum ada kartu keluarga</p></div>';
+    return;
+  }
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>No. KK</th><th>Kepala Keluarga</th><th>Alamat</th><th>Jumlah</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    h += `<tr><td data-label="No. KK" class="font-mono font-semibold">${i.noKK}</td><td data-label="Kepala">${i.kepala || "-"}</td><td data-label="Alamat" class="text-xs">${i.alamat || "-"}</td><td data-label="Jumlah">${i.jumlah} orang</td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openKeluargaModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteKeluarga('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+}
 
 // CRUD - Pelayan Module
-function openPelayanModal(id=null){document.getElementById('modalPelayanTitle').textContent=id?'Edit Pelayan':'Tambah Pelayan';document.getElementById('pelayanEditId').value=id||'';populateSelect('pelayanNama',getData('gd_jemaat'),'nama',true);if(id){const i=getData('gd_pelayan').find(x=>x.id===id);if(i){document.getElementById('pelayanNama').value=i.nama;document.getElementById('pelayanJabatan').value=i.jabatan;document.getElementById('pelayanDepartemen').value=i.departemen;document.getElementById('pelayanStatus').value=i.status}}else{document.getElementById('pelayanJabatan').value='Pendeta';document.getElementById('pelayanDepartemen').value='Umum';document.getElementById('pelayanStatus').value='Aktif'}openModal('modalPelayan')}
-function savePelayan(){const eid=document.getElementById('pelayanEditId').value,nama=document.getElementById('pelayanNama').value;if(!nama){showToast('Nama wajib dipilih','error');return}const item={id:eid||generateId(),nama,jabatan:document.getElementById('pelayanJabatan').value,departemen:document.getElementById('pelayanDepartemen').value,status:document.getElementById('pelayanStatus').value};let items=getData('gd_pelayan');if(eid)items=items.map(x=>x.id===eid?item:x);else items.unshift(item);setData('gd_pelayan',items);closeModal('modalPelayan');showToast(eid?'Pelayan diperbarui':'Pelayan baru ditambahkan','success');refreshAll()}
-function deletePelayan(id){showConfirm('Hapus pelayan ini?',()=>{setData('gd_pelayan',getData('gd_pelayan').filter(i=>i.id!==id));showToast('Pelayan dihapus','success');refreshAll()})}
-function renderPelayanTable(){const c=document.getElementById('pelayanTableContainer');if(!c)return;const items=getData('gd_pelayan').sort((a,b)=>(JABATAN_ORDER[a.jabatan]||99)-(JABATAN_ORDER[b.jabatan]||99));if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-user-tie text-5xl mb-3 block"></i><p class="text-lg">Belum ada pelayan</p></div>';return}let h='<table class="modern-table responsive-table"><thead><tr><th>Nama</th><th>Jabatan</th><th>Departemen</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';items.forEach(i=>{h+=`<tr><td data-label="Nama" class="font-semibold">${i.nama}</td><td data-label="Jabatan"><span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">${i.jabatan}</span></td><td data-label="Departemen">${i.departemen}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${i.status==='Aktif'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-600'}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openPelayanModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deletePelayan('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});h+='</tbody></table>';c.innerHTML=h;populatePJSelect()}
+function openPelayanModal(id = null) {
+  document.getElementById("modalPelayanTitle").textContent = id ? "Edit Pelayan" : "Tambah Pelayan";
+  document.getElementById("pelayanEditId").value = id || "";
+  populateSelect("pelayanNama", getData("gd_jemaat"), "nama", true);
+  if (id) {
+    const i = getData("gd_pelayan").find((x) => x.id === id);
+    if (i) {
+      document.getElementById("pelayanNama").value = i.nama;
+      document.getElementById("pelayanJabatan").value = i.jabatan;
+      document.getElementById("pelayanDepartemen").value = i.departemen;
+      document.getElementById("pelayanStatus").value = i.status;
+    }
+  } else {
+    document.getElementById("pelayanJabatan").value = "Pendeta";
+    document.getElementById("pelayanDepartemen").value = "Umum";
+    document.getElementById("pelayanStatus").value = "Aktif";
+  }
+  openModal("modalPelayan");
+}
+
+function savePelayan() {
+  const eid = document.getElementById("pelayanEditId").value,
+    nama = document.getElementById("pelayanNama").value;
+  if (!nama) { showToast("Nama wajib dipilih", "error"); return; }
+  const item = {
+    id: eid || generateId(),
+    nama,
+    jabatan: document.getElementById("pelayanJabatan").value,
+    departemen: document.getElementById("pelayanDepartemen").value,
+    status: document.getElementById("pelayanStatus").value,
+  };
+  let items = getData("gd_pelayan");
+  if (eid) items = items.map((x) => (x.id === eid ? item : x));
+  else items.unshift(item);
+  setData("gd_pelayan", items);
+  closeModal("modalPelayan");
+  showToast(eid ? "Pelayan diperbarui" : "Pelayan baru ditambahkan", "success");
+  refreshAll();
+}
+
+function deletePelayan(id) {
+  showConfirm("Hapus pelayan ini?", () => {
+    setData("gd_pelayan", getData("gd_pelayan").filter((i) => i.id !== id));
+    showToast("Pelayan dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderPelayanTable() {
+  const c = document.getElementById("pelayanTableContainer");
+  if (!c) return;
+  const items = getData("gd_pelayan").sort((a, b) => (JABATAN_ORDER[a.jabatan] || 99) - (JABATAN_ORDER[b.jabatan] || 99));
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-user-tie text-5xl mb-3 block"></i><p class="text-lg">Belum ada pelayan</p></div>';
+    return;
+  }
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>Nama</th><th>Jabatan</th><th>Departemen</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    h += `<tr><td data-label="Nama" class="font-semibold">${i.nama}</td><td data-label="Jabatan"><span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">${i.jabatan}</span></td><td data-label="Departemen">${i.departemen}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${i.status === "Aktif" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openPelayanModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deletePelayan('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+  populatePJSelect();
+}
 
 // CRUD - Keuangan Module
-function openKeuanganModal(id=null){document.getElementById('modalKeuanganTitle').textContent=id?'Edit Transaksi':'Tambah Transaksi';document.getElementById('keuanganEditId').value=id||'';if(id){const i=getData('gd_keuangan').find(x=>x.id===id);if(i){document.getElementById('keuanganJenis').value=i.jenis;document.getElementById('keuanganKategori').value=i.kategori;document.getElementById('keuanganJumlah').value=i.jumlah;document.getElementById('keuanganDeskripsi').value=i.deskripsi||'';const t=i.tanggal||'';if(t&&t.match(/^\d{4}-\d{2}-\d{2}$/)){const[Y,M,D]=t.split('-');document.getElementById('keuanganTanggal').value=`${D}/${M}/${Y}`;document.getElementById('keuanganTanggalValue').value=t}else{document.getElementById('keuanganTanggal').value='';document.getElementById('keuanganTanggalValue').value=''}}}else{['keuanganJumlah','keuanganDeskripsi'].forEach(f=>document.getElementById(f).value='');document.getElementById('keuanganTanggal').value='';document.getElementById('keuanganTanggalValue').value='';document.getElementById('keuanganJenis').value='masuk';document.getElementById('keuanganKategori').value='Persembahan';const td=new Date();const yyyy=td.getFullYear(),mm=String(td.getMonth()+1).padStart(2,'0'),dd=String(td.getDate()).padStart(2,'0');document.getElementById('keuanganTanggal').value=`${dd}/${mm}/${yyyy}`;document.getElementById('keuanganTanggalValue').value=`${yyyy}-${mm}-${dd}`}openModal('modalKeuangan')}
-function saveKeuangan(){const eid=document.getElementById('keuanganEditId').value,jumlah=parseInt(document.getElementById('keuanganJumlah').value)||0;if(jumlah<=0){showToast('Jumlah harus > 0','error');return}const item={id:eid||generateId(),jenis:document.getElementById('keuanganJenis').value,kategori:document.getElementById('keuanganKategori').value,jumlah,deskripsi:document.getElementById('keuanganDeskripsi').value,tanggal:document.getElementById('keuanganTanggalValue').value};let items=getData('gd_keuangan');if(eid)items=items.map(x=>x.id===eid?item:x);else items.unshift(item);setData('gd_keuangan',items);closeModal('modalKeuangan');showToast(eid?'Transaksi diperbarui':'Transaksi baru ditambahkan','success');refreshAll()}
-function deleteKeuangan(id){showConfirm('Hapus transaksi ini?',()=>{setData('gd_keuangan',getData('gd_keuangan').filter(i=>i.id!==id));showToast('Transaksi dihapus','success');refreshAll()})}
-function renderKeuanganTable(){const c=document.getElementById('keuanganTableContainer');if(!c)return;const f=document.getElementById('keuanganFilter')?.value||'semua';let items=getData('gd_keuangan');if(f!=='semua')items=items.filter(i=>i.jenis===f);if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-receipt text-5xl mb-3 block"></i><p class="text-lg">Belum ada transaksi</p></div>';return}let h='<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Jumlah</th><th>Deskripsi</th><th class="text-center">Aksi</th></tr></thead><tbody>';items.forEach(i=>{const jb=i.jenis==='masuk'?'bg-green-100 text-green-700':'bg-red-100 text-red-600';const jc=i.jenis==='masuk'?'text-green-700':'text-red-600';h+=`<tr><td data-label="Tanggal">${i.tanggal}</td><td data-label="Jenis"><span class="px-2 py-1 rounded-full text-xs font-semibold ${jb}"><i class="fa-solid fa-arrow-${i.jenis==='masuk'?'down':'up'} mr-1"></i>${i.jenis==='masuk'?'Masuk':'Keluar'}</span></td><td data-label="Kategori">${i.kategori}</td><td data-label="Jumlah" class="font-bold ${jc}">Rp ${i.jumlah.toLocaleString('id-ID')}</td><td data-label="Deskripsi" class="text-xs">${i.deskripsi||'-'}</td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openKeuanganModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteKeuangan('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});h+='</tbody></table>';c.innerHTML=h}
-function renderKeuanganStats(){
-    const c=document.getElementById('keuanganStats');if(!c)return;const items=getData('gd_keuangan');let m=0,k=0;items.forEach(i=>i.jenis==='masuk'?m+=i.jumlah:k+=i.uuid?0:i.jumlah); // Safe logic fallback
-    k=0; items.forEach(i=>i.jenis==='masuk'?m+=0:k+=i.jumlah); m=0; items.forEach(i=>i.jenis==='masuk'?m+=i.jumlah:k+=0); // Reset bound values cleanly
-    c.innerHTML=`
-        <div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600"><i class="fa-solid fa-arrow-down"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${m.toLocaleString('id-ID')}</h3><p class="text-xs text-gray-500">Pemasukan</p></div></div>
-        <div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fa-solid fa-arrow-up"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${k.toLocaleString('id-ID')}</h3><p class="text-xs text-gray-500">Pengeluaran</p></div></div>
-        <div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700"><i class="fa-solid fa-wallet"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${(m-k).toLocaleString('id-ID')}</h3><p class="text-xs text-gray-500">Saldo</p></div></div>
+function openKeuanganModal(id = null) {
+  document.getElementById("modalKeuanganTitle").textContent = id ? "Edit Transaksi" : "Tambah Transaksi";
+  document.getElementById("keuanganEditId").value = id || "";
+  if (id) {
+    const i = getData("gd_keuangan").find((x) => x.id === id);
+    if (i) {
+      document.getElementById("keuanganJenis").value = i.jenis;
+      document.getElementById("keuanganKategori").value = i.kategori;
+      document.getElementById("keuanganJumlah").value = i.jumlah;
+      document.getElementById("keuanganDeskripsi").value = i.deskripsi || "";
+      const t = i.tanggal || "";
+      if (t && t.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [Y, M, D] = t.split("-");
+        document.getElementById("keuanganTanggal").value = `${D}/${M}/${Y}`;
+        document.getElementById("keuanganTanggalValue").value = t;
+      } else {
+        document.getElementById("keuanganTanggal").value = "";
+        document.getElementById("keuanganTanggalValue").value = "";
+      }
+    }
+  } else {
+    ["keuanganJumlah", "keuanganDeskripsi"].forEach((f) => (document.getElementById(f).value = ""));
+    document.getElementById("keuanganTanggal").value = "";
+    document.getElementById("keuanganTanggalValue").value = "";
+    document.getElementById("keuanganJenis").value = "masuk";
+    document.getElementById("keuanganKategori").value = "Persembahan";
+    const td = new Date();
+    const yyyy = td.getFullYear(), mm = String(td.getMonth() + 1).padStart(2, "0"), dd = String(td.getDate()).padStart(2, "0");
+    document.getElementById("keuanganTanggal").value = `${dd}/${mm}/${yyyy}`;
+    document.getElementById("keuanganTanggalValue").value = `${yyyy}-${mm}-${dd}`;
+  }
+  openModal("modalKeuangan");
+}
+
+function saveKeuangan() {
+  const eid = document.getElementById("keuanganEditId").value,
+    jumlah = parseInt(document.getElementById("keuanganJumlah").value) || 0;
+  if (jumlah <= 0) { showToast("Jumlah harus > 0", "error"); return; }
+  const item = {
+    id: eid || generateId(),
+    jenis: document.getElementById("keuanganJenis").value,
+    kategori: document.getElementById("keuanganKategori").value,
+    jumlah,
+    deskripsi: document.getElementById("keuanganDeskripsi").value,
+    tanggal: document.getElementById("keuanganTanggalValue").value,
+  };
+  let items = getData("gd_keuangan");
+  if (eid) items = items.map((x) => (x.id === eid ? item : x));
+  else items.unshift(item);
+  setData("gd_keuangan", items);
+  closeModal("modalKeuangan");
+  showToast(eid ? "Transaksi diperbarui" : "Transaksi baru ditambahkan", "success");
+  refreshAll();
+}
+
+function deleteKeuangan(id) {
+  showConfirm("Hapus transaksi ini?", () => {
+    setData("gd_keuangan", getData("gd_keuangan").filter((i) => i.id !== id));
+    showToast("Transaksi dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderKeuanganTable() {
+  const c = document.getElementById("keuanganTableContainer");
+  if (!c) return;
+  const f = document.getElementById("keuanganFilter")?.value || "semua";
+  let items = getData("gd_keuangan");
+  if (f !== "semua") items = items.filter((i) => i.jenis === f);
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-receipt text-5xl mb-3 block"></i><p class="text-lg">Belum ada transaksi</p></div>';
+    return;
+  }
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Jumlah</th><th>Deskripsi</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    const jb = i.jenis === "masuk" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600";
+    const jc = i.jenis === "masuk" ? "text-green-700" : "text-red-600";
+    h += `<tr><td data-label="Tanggal">${i.tanggal}</td><td data-label="Jenis"><span class="px-2 py-1 rounded-full text-xs font-semibold ${jb}"><i class="fa-solid fa-arrow-${i.jenis === "masuk" ? "down" : "up"} mr-1"></i>${i.jenis === "masuk" ? "Masuk" : "Keluar"}</span></td><td data-label="Kategori">${i.kategori}</td><td data-label="Jumlah" class="font-bold ${jc}">Rp ${i.jumlah.toLocaleString("id-ID")}</td><td data-label="Deskripsi" class="text-xs">${i.deskripsi || "-"}</td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openKeuanganModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteKeuangan('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+}
+
+function renderKeuanganStats() {
+  const c = document.getElementById("keuanganStats");
+  if (!c) return;
+  const items = getData("gd_keuangan");
+  let m = 0, k = 0;
+  items.forEach((i) => (i.jenis === "masuk" ? (m += i.jumlah) : (k += i.jumlah))); 
+  c.innerHTML = `
+        <div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600"><i class="fa-solid fa-arrow-down"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${m.toLocaleString("id-ID")}</h3><p class="text-xs text-gray-500">Pemasukan</p></div></div>
+        <div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fa-solid fa-arrow-up"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${k.toLocaleString("id-ID")}</h3><p class="text-xs text-gray-500">Pengeluaran</p></div></div>
+        <div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700"><i class="fa-solid fa-wallet"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${(m - k).toLocaleString("id-ID")}</h3><p class="text-xs text-gray-500">Saldo</p></div></div>
         <div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600"><i class="fa-solid fa-receipt"></i></div><div><h3 class="text-lg font-bold">${items.length}</h3><p class="text-xs text-gray-500">Transaksi</p></div></div>`;
 }
 
 // CRUD - Inventaris Module
-function openInventarisModal(id=null){document.getElementById('modalInventarisTitle').textContent=id?'Edit Inventaris':'Tambah Inventaris';document.getElementById('inventarisEditId').value=id||'';if(id){const i=getData('gd_inventaris').find(x=>x.id===id);if(i){document.getElementById('inventarisNama').value=i.nama;document.getElementById('inventarisKategori').value=i.kategori;document.getElementById('inventarisJumlah').value=i.jumlah;document.getElementById('inventarisHarga').value=i.harga;document.getElementById('inventarisTahun').value=i.tahun;document.getElementById('inventarisKondisi').value=i.kondisi}}else{['inventarisNama','inventarisJumlah','inventarisHarga','inventarisTahun'].forEach(f=>document.getElementById(f).value='');document.getElementById('inventarisKategori').value='Peralatan Ibadah';document.getElementById('inventarisKondisi').value='Baik'}openModal('modalInventaris')}
-function saveInventaris(){const eid=document.getElementById('inventarisEditId').value,nama=document.getElementById('inventarisNama').value.trim();if(!nama){showToast('Nama wajib diisi','error');return}const item={id:eid||generateId(),nama,kategori:document.getElementById('inventarisKategori').value,jumlah:parseInt(document.getElementById('inventarisJumlah').value)||1,harga:parseInt(document.getElementById('inventarisHarga').value)||0,tahun:parseInt(document.getElementById('inventarisTahun').value)||new Date().getFullYear(),kondisi:document.getElementById('inventarisKondisi').value};let items=getData('gd_inventaris');if(eid)items=items.map(x=>x.id===eid?item:x);else items.unshift(item);setData('gd_inventaris',items);closeModal('modalInventaris');showToast(eid?'Inventaris diperbarui':'Inventaris baru ditambahkan','success');refreshAll()}
-function deleteInventaris(id){showConfirm('Hapus inventaris ini?',()=>{setData('gd_inventaris',getData('gd_inventaris').filter(i=>i.id!==id));showToast('Inventaris dihapus','success');refreshAll()})}
-function renderInventarisTable(){const c=document.getElementById('inventarisTableContainer');if(!c)return;const items=getData('gd_inventaris');if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-box-open text-5xl mb-3 block"></i><p class="text-lg">Belum ada inventaris</p></div>';return}let h='<table class="modern-table responsive-table"><thead><tr><th>Nama Barang</th><th>Kategori</th><th>Jumlah</th><th>Harga</th><th>Tahun</th><th>Kondisi</th><th class="text-center">Aksi</th></tr></thead><tbody>';items.forEach(i=>{h+=`<tr><td data-label="Nama" class="font-semibold">${i.nama}</td><td data-label="Kategori">${i.kategori}</td><td data-label="Jumlah">${i.jumlah}</td><td data-label="Harga">Rp ${i.harga.toLocaleString('id-ID')}</td><td data-label="Tahun">${i.tahun}</td><td data-label="Kondisi"><span class="px-2 py-1 rounded-full text-xs font-semibold ${i.kondisi==='Baik'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}">${i.kondisi}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openInventarisModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteInventaris('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});h+='</tbody></table>';c.innerHTML=h}
+function openInventarisModal(id = null) {
+  document.getElementById("modalInventarisTitle").textContent = id ? "Edit Inventaris" : "Tambah Inventaris";
+  document.getElementById("inventarisEditId").value = id || "";
+  if (id) {
+    const i = getData("gd_inventaris").find((x) => x.id === id);
+    if (i) {
+      document.getElementById("inventarisNama").value = i.nama;
+      document.getElementById("inventarisKategori").value = i.kategori;
+      document.getElementById("inventarisJumlah").value = i.jumlah;
+      document.getElementById("inventarisHarga").value = i.harga;
+      document.getElementById("inventarisTahun").value = i.tahun;
+      document.getElementById("inventarisKondisi").value = i.kondisi;
+    }
+  } else {
+    ["inventarisNama", "inventarisJumlah", "inventarisHarga", "inventarisTahun"].forEach((f) => (document.getElementById(f).value = ""));
+    document.getElementById("inventarisKategori").value = "Peralatan Ibadah";
+    document.getElementById("inventarisKondisi").value = "Baik";
+  }
+  openModal("modalInventaris");
+}
+
+function saveInventaris() {
+  const eid = document.getElementById("inventarisEditId").value,
+    nama = document.getElementById("inventarisNama").value.trim();
+  if (!nama) { showToast("Nama wajib diisi", "error"); return; }
+  const item = {
+    id: eid || generateId(),
+    nama,
+    kategori: document.getElementById("inventarisKategori").value,
+    jumlah: parseInt(document.getElementById("inventarisJumlah").value) || 1,
+    harga: parseInt(document.getElementById("inventarisHarga").value) || 0,
+    tahun: parseInt(document.getElementById("inventarisTahun").value) || new Date().getFullYear(),
+    kondisi: document.getElementById("inventarisKondisi").value,
+  };
+  let items = getData("gd_inventaris");
+  if (eid) items = items.map((x) => (x.id === eid ? item : x));
+  else items.unshift(item);
+  setData("gd_inventaris", items);
+  closeModal("modalInventaris");
+  showToast(eid ? "Inventaris diperbarui" : "Inventaris baru ditambahkan", "success");
+  refreshAll();
+}
+
+function deleteInventaris(id) {
+  showConfirm("Hapus inventaris ini?", () => {
+    setData("gd_inventaris", getData("gd_inventaris").filter((i) => i.id !== id));
+    showToast("Inventaris dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderInventarisTable() {
+  const c = document.getElementById("inventarisTableContainer");
+  if (!c) return;
+  const items = getData("gd_inventaris");
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-box-open text-5xl mb-3 block"></i><p class="text-lg">Belum ada inventaris</p></div>';
+    return;
+  }
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>Nama Barang</th><th>Kategori</th><th>Jumlah</th><th>Harga</th><th>Tahun</th><th>Kondisi</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    h += `<tr><td data-label="Nama" class="font-semibold">${i.nama}</td><td data-label="Kategori">${i.kategori}</td><td data-label="Jumlah">${i.jumlah}</td><td data-label="Harga">Rp ${i.harga.toLocaleString("id-ID")}</td><td data-label="Tahun">${i.tahun}</td><td data-label="Kondisi"><span class="px-2 py-1 rounded-full text-xs font-semibold ${i.kondisi === "Baik" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}">${i.kondisi}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openInventarisModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteInventaris('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+}
 
 // CRUD - Jadwal Module
-function openJadwalModal(id=null){document.getElementById('modalJadwalTitle').textContent=id?'Edit Kegiatan':'Tambah Kegiatan';document.getElementById('jadwalEditId').value=id||'';populatePJSelect();if(!id){document.getElementById('jadwalJam').value='09';document.getElementById('jadwalMenit').value='00'}if(id){const i=getData('gd_jadwal').find(x=>x.id===id);if(i){document.getElementById('jadwalNama').value=i.nama;const t=i.tanggal||'';if(t&&t.match(/^\d{4}-\d{2}-\d{2}$/)){const[Y,M,D]=t.split('-');document.getElementById('jadwalTanggal').value=`${D}/${M}/${Y}`;document.getElementById('jadwalTanggalValue').value=t}if(i.waktu){const[J,M]=i.waktu.split(':');document.getElementById('jadwalJam').value=J;document.getElementById('jadwalMenit').value=M}document.getElementById('jadwalLokasi').value=i.lokasi;document.getElementById('jadwalPJ').value=i.pj;document.getElementById('jadwalStatus').value=i.status}}else{['jadwalNama','jadwalLokasi'].forEach(f=>document.getElementById(f).value='');document.getElementById('jadwalTanggal').value='';document.getElementById('jadwalTanggalValue').value='';document.getElementById('jadwalStatus').value='Terjadwal'}openModal('modalJadwal')}
-function saveJadwal(){const eid=document.getElementById('jadwalEditId').value,nama=document.getElementById('jadwalNama').value.trim(),tanggal=document.getElementById('jadwalTanggalValue').value;if(!nama||!tanggal){showToast('Nama dan tanggal wajib diisi','error');return}const jam=document.getElementById('jadwalJam').value,menit=document.getElementById('jadwalMenit').value,waktu=`${jam}:${menit}`;const item={id:eid||generateId(),nama,tanggal,waktu,lokasi:document.getElementById('jadwalLokasi').value,pj:document.getElementById('jadwalPJ').value,status:document.getElementById('jadwalStatus').value};let items=getData('gd_jadwal');if(eid)items=items.map(x=>x.id===eid?item:x);else items.unshift(item);items.sort((a,b)=>new Date(a.tanggal)-new Date(b.tanggal));setData('gd_jadwal',items);closeModal('modalJadwal');showToast(eid?'Jadwal diperbarui':'Jadwal baru ditambahkan','success');refreshAll()}
-function deleteJadwal(id){showConfirm('Hapus jadwal ini?',()=>{setData('gd_jadwal',getData('gd_jadwal').filter(i=>i.id!==id));showToast('Jadwal dihapus','success');refreshAll()})}
-function renderJadwalTable(){const c=document.getElementById('jadwalTableContainer');if(!c)return;const items=getData('gd_jadwal');if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-calendar-xmark text-5xl mb-3 block"></i><p class="text-lg">Belum ada jadwal</p></div>';return}const sc={Terjadwal:'bg-amber-100 text-amber-700',Berlangsung:'bg-blue-100 text-blue-700',Selesai:'bg-green-100 text-green-700',Dibatalkan:'bg-red-100 text-red-600'};let h='<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Waktu</th><th>Kegiatan</th><th>Lokasi</th><th>PJ</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';items.forEach(i=>{h+=`<tr><td data-label="Tanggal" class="font-semibold">${new Date(i.tanggal).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}</td><td data-label="Waktu">${i.waktu||'-'}</td><td data-label="Kegiatan">${i.nama}</td><td data-label="Lokasi">${i.lokasi||'-'}</td><td data-label="PJ">${i.pj||'-'}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${sc[i.status]||''}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openJadwalModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteJadwal('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});h+='</tbody></table>';c.innerHTML=h;populateSelect('absensiKegiatan',getData('gd_jadwal'),'nama')}
+function openJadwalModal(id = null) {
+  document.getElementById("modalJadwalTitle").textContent = id ? "Edit Kegiatan" : "Tambah Kegiatan";
+  document.getElementById("jadwalEditId").value = id || "";
+  populatePJSelect();
+  if (!id) {
+    document.getElementById("jadwalJam").value = "09";
+    document.getElementById("jadwalMenit").value = "00";
+  }
+  if (id) {
+    const i = getData("gd_jadwal").find((x) => x.id === id);
+    if (i) {
+      document.getElementById("jadwalNama").value = i.nama;
+      const t = i.tanggal || "";
+      if (t && t.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [Y, M, D] = t.split("-");
+        document.getElementById("jadwalTanggal").value = `${D}/${M}/${Y}`;
+        document.getElementById("jadwalTanggalValue").value = t;
+      }
+      if (i.waktu) {
+        const [J, M] = i.waktu.split(":");
+        document.getElementById("jadwalJam").value = J;
+        document.getElementById("jadwalMenit").value = M;
+      }
+      document.getElementById("jadwalLokasi").value = i.lokasi;
+      document.getElementById("jadwalPJ").value = i.pj;
+      document.getElementById("jadwalStatus").value = i.status;
+    }
+  } else {
+    ["jadwalNama", "jadwalLokasi"].forEach((f) => (document.getElementById(f).value = ""));
+    document.getElementById("jadwalTanggal").value = "";
+    document.getElementById("jadwalTanggalValue").value = "";
+    document.getElementById("jadwalStatus").value = "Terjadwal";
+  }
+  openModal("modalJadwal");
+}
+
+function saveJadwal() {
+  const eid = document.getElementById("jadwalEditId").value,
+    nama = document.getElementById("jadwalNama").value.trim(),
+    tanggal = document.getElementById("jadwalTanggalValue").value;
+  if (!nama || !tanggal) { showToast("Nama dan tanggal wajib diisi", "error"); return; }
+  const jam = document.getElementById("jadwalJam").value,
+    menit = document.getElementById("jadwalMenit").value,
+    waktu = `${jam}:${menit}`;
+  const item = {
+    id: eid || generateId(),
+    nama, tanggal, waktu,
+    lokasi: document.getElementById("jadwalLokasi").value,
+    pj: document.getElementById("jadwalPJ").value,
+    status: document.getElementById("jadwalStatus").value,
+  };
+  let items = getData("gd_jadwal");
+  if (eid) items = items.map((x) => (x.id === eid ? item : x));
+  else items.unshift(item);
+  items.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+  setData("gd_jadwal", items);
+  closeModal("modalJadwal");
+  showToast(eid ? "Jadwal diperbarui" : "Jadwal baru ditambahkan", "success");
+  refreshAll();
+}
+
+function deleteJadwal(id) {
+  showConfirm("Hapus jadwal ini?", () => {
+    setData("gd_jadwal", getData("gd_jadwal").filter((i) => i.id !== id));
+    showToast("Jadwal dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderJadwalTable() {
+  const c = document.getElementById("jadwalTableContainer");
+  if (!c) return;
+  const items = getData("gd_jadwal");
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-calendar-xmark text-5xl mb-3 block"></i><p class="text-lg">Belum ada jadwal</p></div>';
+    return;
+  }
+  const sc = { Terjadwal: "bg-amber-100 text-amber-700", Berlangsung: "bg-blue-100 text-blue-700", Selesai: "bg-green-100 text-green-700", Dibatalkan: "bg-red-100 text-red-600" };
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Waktu</th><th>Kegiatan</th><th>Lokasi</th><th>PJ</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    h += `<tr><td data-label="Tanggal" class="font-semibold">${new Date(i.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</td><td data-label="Waktu">${i.waktu || "-"}</td><td data-label="Kegiatan">${i.nama}</td><td data-label="Lokasi">${i.lokasi || "-"}</td><td data-label="PJ">${i.pj || "-"}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${sc[i.status] || ""}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="edit-btn" onclick="openJadwalModal('${i.id}')"><i class="fa-solid fa-pen-to-square"></i></button><button class="delete-btn" onclick="deleteJadwal('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+  populateSelect("absensiKegiatan", getData("gd_jadwal"), "nama");
+}
 
 // Absensi Module
-function openAbsensiModal(){populateSelect('absensiKegiatan',getData('gd_jadwal'),'nama');populateSelect('absensiNama',getData('gd_jemaat'),'nama');const td=new Date();const y=td.getFullYear(),m=String(td.getMonth()+1).padStart(2,'0'),d=String(td.getDate()).padStart(2,'0');document.getElementById('absensiTanggal').value=`${d}/${m}/${y}`;document.getElementById('absensiTanggalValue').value=`${y}-${m}-${d}`;openModal('modalAbsensi')}
-function saveAbsensi(){const k=document.getElementById('absensiKegiatan').value,n=document.getElementById('absensiNama').value;if(!k||!n){showToast('Lengkapi data','error');return}const item={id:generateId(),kegiatan:k,nama:n,status:document.getElementById('absensiStatus').value,tanggal:document.getElementById('absensiTanggalValue').value};let items=getData('gd_absensi');items.unshift(item);setData('gd_absensi',items);closeModal('modalAbsensi');showToast('Absensi dicatat','success');refreshAll()}
-function deleteAbsensi(id){showConfirm('Hapus absensi ini?',()=>{setData('gd_absensi',getData('gd_absensi').filter(i=>i.id!==id));showToast('Absensi dihapus','success');refreshAll()})}
-function renderAbsensiTable(){const c=document.getElementById('absensiTableContainer');if(!c)return;const items=getData('gd_absensi');if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-clipboard text-5xl mb-3 block"></i><p class="text-lg">Belum ada catatan absensi</p></div>';return}const sc={Hadir:'bg-green-100 text-green-700','Tidak Hadir':'bg-red-100 text-red-600',Izin:'bg-amber-100 text-amber-700',Sakit:'bg-purple-100 text-purple-700'};let h='<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Kegiatan</th><th>Nama</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';items.forEach(i=>{h+=`<tr><td data-label="Tanggal">${i.tanggal}</td><td data-label="Kegiatan">${i.kegiatan}</td><td data-label="Nama">${i.nama}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${sc[i.status]||''}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="delete-btn" onclick="deleteAbsensi('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});h+='</tbody></table>';c.innerHTML=h}
+function openAbsensiModal() {
+  populateSelect("absensiKegiatan", getData("gd_jadwal"), "nama");
+  populateSelect("absensiNama", getData("gd_jemaat"), "nama");
+  const td = new Date();
+  const y = td.getFullYear(), m = String(td.getMonth() + 1).padStart(2, "0"), d = String(td.getDate()).padStart(2, "0");
+  document.getElementById("absensiTanggal").value = `${d}/${m}/${y}`;
+  document.getElementById("absensiTanggalValue").value = `${y}-${m}-${d}`;
+  openModal("modalAbsensi");
+}
+
+function saveAbsensi() {
+  const k = document.getElementById("absensiKegiatan").value,
+    n = document.getElementById("absensiNama").value;
+  if (!k || !n) { showToast("Lengkapi data", "error"); return; }
+  const item = {
+    id: generateId(), kegiatan: k, nama: n,
+    status: document.getElementById("absensiStatus").value,
+    tanggal: document.getElementById("absensiTanggalValue").value,
+  };
+  let items = getData("gd_absensi");
+  items.unshift(item);
+  setData("gd_absensi", items);
+  closeModal("modalAbsensi");
+  showToast("Absensi dicatat", "success");
+  refreshAll();
+}
+
+function deleteAbsensi(id) {
+  showConfirm("Hapus absensi ini?", () => {
+    setData("gd_absensi", getData("gd_absensi").filter((i) => i.id !== id));
+    showToast("Absensi dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderAbsensiTable() {
+  const c = document.getElementById("absensiTableContainer");
+  if (!c) return;
+  const items = getData("gd_absensi");
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-clipboard text-5xl mb-3 block"></i><p class="text-lg">Belum ada catatan absensi</p></div>';
+    return;
+  }
+  const sc = { Hadir: "bg-green-100 text-green-700", "Tidak Hadir": "bg-red-100 text-red-600", Izin: "bg-amber-100 text-amber-700", Sakit: "bg-purple-100 text-purple-700" };
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Kegiatan</th><th>Nama</th><th>Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    h += `<tr><td data-label="Tanggal">${i.tanggal}</td><td data-label="Kegiatan">${i.kegiatan}</td><td data-label="Nama">${i.nama}</td><td data-label="Status"><span class="px-2 py-1 rounded-full text-xs font-semibold ${sc[i.status] || ""}">${i.status}</span></td><td data-label="Aksi" class="action-btns text-center"><button class="delete-btn" onclick="deleteAbsensi('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+}
 
 // Notifikasi Module
-function openNotifikasiModal(){openModal('modalNotifikasi')}
-function saveNotifikasi(){const j=document.getElementById('notifikasiJudul').value.trim();if(!j){showToast('Judul wajib diisi','error');return}const item={id:generateId(),judul:j,pesan:document.getElementById('notifikasiPesan').value,target:document.getElementById('notifikasiTarget').value,via:document.getElementById('notifikasiVia').value,tanggal:new Date().toISOString().split('T')[0]};let items=getData('gd_notifikasi');items.unshift(item);setData('gd_notifikasi',items);closeModal('modalNotifikasi');showToast('Notifikasi terkirim!','success');refreshAll()}
-function deleteNotifikasi(id){showConfirm('Hapus notifikasi ini?',()=>{setData('gd_notifikasi',getData('gd_notifikasi').filter(i=>i.id!==id));showToast('Notifikasi dihapus','success');refreshAll()})}
-function renderNotifikasiTable(){const c=document.getElementById('notifikasiTableContainer');if(!c)return;const items=getData('gd_notifikasi');if(!items.length){c.innerHTML='<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-bell-slash text-5xl mb-3 block"></i><p class="text-lg">Belum ada notifikasi</p></div>';return}let h='<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Judul</th><th>Target</th><th>Via</th><th class="text-center">Aksi</th></tr></thead><tbody>';items.forEach(i=>{h+=`<tr><td data-label="Tanggal">${i.tanggal}</td><td data-label="Judul" class="font-semibold">${i.judul}</td><td data-label="Target">${i.target}</td><td data-label="Via">${i.via}</td><td data-label="Aksi" class="action-btns text-center"><button class="delete-btn" onclick="deleteNotifikasi('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`});h+='</tbody></table>';c.innerHTML=h}
+function openNotifikasiModal() {
+  openModal("modalNotifikasi");
+}
+
+function saveNotifikasi() {
+  const j = document.getElementById("notifikasiJudul").value.trim();
+  if (!j) { showToast("Judul wajib diisi", "error"); return; }
+  const item = {
+    id: generateId(), judul: j,
+    pesan: document.getElementById("notifikasiPesan").value,
+    target: document.getElementById("notifikasiTarget").value,
+    via: document.getElementById("notifikasiVia").value,
+    tanggal: new Date().toISOString().split("T")[0],
+  };
+  let items = getData("gd_notifikasi");
+  items.unshift(item);
+  setData("gd_notifikasi", items);
+  closeModal("modalNotifikasi");
+  showToast("Notifikasi terkirim!", "success");
+  refreshAll();
+}
+
+function deleteNotifikasi(id) {
+  showConfirm("Hapus notifikasi ini?", () => {
+    setData("gd_notifikasi", getData("gd_notifikasi").filter((i) => i.id !== id));
+    showToast("Notifikasi dihapus", "success");
+    refreshAll();
+  });
+}
+
+function renderNotifikasiTable() {
+  const c = document.getElementById("notifikasiTableContainer");
+  if (!c) return;
+  const items = getData("gd_notifikasi");
+  if (!items.length) {
+    c.innerHTML = '<div class="text-center py-16 text-gray-400"><i class="fa-solid fa-bell-slash text-5xl mb-3 block"></i><p class="text-lg">Belum ada notifikasi</p></div>';
+    return;
+  }
+  let h = '<table class="modern-table responsive-table"><thead><tr><th>Tanggal</th><th>Judul</th><th>Target</th><th>Via</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+  items.forEach((i) => {
+    h += `<tr><td data-label="Tanggal">${i.tanggal}</td><td data-label="Judul" class="font-semibold">${i.judul}</td><td data-label="Target">${i.target}</td><td data-label="Via">${i.via}</td><td data-label="Aksi" class="action-btns text-center"><button class="delete-btn" onclick="deleteNotifikasi('${i.id}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+  });
+  h += "</tbody></table>";
+  c.innerHTML = h;
+}
 
 // Dokumen & Laporan
-function generateReport(){const j=getData('gd_jemaat'),k=getData('gd_keuangan');let m=0,kl=0;k.forEach(i=>i.jenis==='masuk'?m+=i.jumlah:kl+=i.jumlah);document.getElementById('dokumenTableContainer').innerHTML=`<div class="space-y-4"><div class="p-4 bg-gray-50 rounded-xl"><h4 class="font-bold mb-2">Laporan Keuangan</h4><p>Pemasukan: Rp ${m.toLocaleString('id-ID')}</p><p>Pengeluaran: Rp ${kl.toLocaleString('id-ID')}</p><p>Saldo: Rp ${(m-kl).toLocaleString('id-ID')}</p><button onclick="window.print()" class="mt-3 bg-primary text-white px-4 py-2 rounded-lg text-sm"><i class="fa-solid fa-print mr-1"></i> Cetak</button></div><div class="p-4 bg-gray-50 rounded-xl"><h4 class="font-bold mb-2">Statistik Jemaat</h4><p>Total: ${j.length}, Aktif: ${j.filter(i=>i.status==='Aktif').length}, Pria: ${j.filter(i=>i.gender==='Pria').length}, Wanita: ${j.filter(i=>i.gender==='Wanita').length}</p></div></div>`}
+function generateReport() {
+  const j = getData("gd_jemaat"), k = getData("gd_keuangan");
+  let m = 0, kl = 0;
+  k.forEach((i) => (i.jenis === "masuk" ? (m += i.jumlah) : (kl += i.jumlah)));
+  document.getElementById("dokumenTableContainer").innerHTML =
+    `<div class="space-y-4"><div class="p-4 bg-gray-50 rounded-xl"><h4 class="font-bold mb-2">Laporan Keuangan</h4><p>Pemasukan: Rp ${m.toLocaleString("id-ID")}</p><p>Pengeluaran: Rp ${kl.toLocaleString("id-ID")}</p><p>Saldo: Rp ${(m - kl).toLocaleString("id-ID")}</p><button onclick="window.print()" class="mt-3 bg-primary text-white px-4 py-2 rounded-lg text-sm"><i class="fa-solid fa-print mr-1"></i> Cetak</button></div><div class="p-4 bg-gray-50 rounded-xl"><h4 class="font-bold mb-2">Statistik Jemaat</h4><p>Total: ${j.length}, Aktif: ${j.filter((i) => i.status === "Aktif").length}, Pria: ${j.filter((i) => i.gender === "Pria").length}, Wanita: ${j.filter((i) => i.gender === "Wanita").length}</p></div></div>`;
+}
 
-// Pengaturan System Tab Control
-document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',function(){document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active','bg-primary','text-white'));this.classList.add('active','bg-primary','text-white');document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+this.dataset.tab).classList.add('active')}));
-function loadSettingsForm(){const s=getSettings();document.getElementById('setNamaGereja').value=s.namaGereja;document.getElementById('setKodeGereja').value=s.kodeGereja;document.getElementById('setAlamat').value=s.alamat;document.getElementById('setTelp').value=s.telp;document.getElementById('setEmail').value=s.email;document.getElementById('setWebsite').value=s.website;document.getElementById('setUsername').value=s.username;document.getElementById('setPassword').value='';document.getElementById('setPasswordConfirm').value='';document.getElementById('setNotifWA').checked=s.notifWA;document.getElementById('setNotifSMS').checked=s.notifSMS;document.getElementById('setNotifEmail').checked=s.notifEmail;document.getElementById('setFontSize').value=s.fontSize;document.getElementById('setMode').value=s.mode;document.getElementById('setWAKey').value=s.waKey;document.getElementById('setSMTPHost').value=s.smtpHost;document.getElementById('setEmailFrom').value=s.emailFrom;document.getElementById('sidebarChurchName').textContent=s.namaGereja||'Gereja Anda'}
-function saveSettings(){const s=getSettings();s.namaGereja=document.getElementById('setNamaGereja').value;s.kodeGereja=document.getElementById('setKodeGereja').value;s.alamat=document.getElementById('setAlamat').value;s.telp=document.getElementById('setTelp').value;s.email=document.getElementById('setEmail').value;s.website=document.getElementById('setWebsite').value;saveSettingsToStorage(s);document.getElementById('sidebarChurchName').textContent=s.namaGereja;showToast('Profil gereja disimpan','success')}
-function saveAccount(){const s=getSettings();const u=document.getElementById('setUsername').value.trim(),p=document.getElementById('setPassword').value,c=document.getElementById('setPasswordConfirm').value;if(!u){showToast('Username harus diisi','error');return}if(p&&p!==c){showToast('Password tidak cocok','error');return}s.username=u;if(p)s.password=p;saveSettingsToStorage(s);showToast('Akun disimpan','success')}
-function saveNotifSettings(){const s=getSettings();s.notifWA=document.getElementById('setNotifWA').checked;s.notifSMS=document.getElementById('setNotifSMS').checked;s.notifEmail=document.getElementById('setNotifEmail').checked;saveSettingsToStorage(s);showToast('Preferensi disimpan','success')}
-function saveDisplaySettings(){const s=getSettings();s.fontSize=document.getElementById('setFontSize').value;s.mode=document.getElementById('setMode').value;saveSettingsToStorage(s);applyDisplaySettings(s);showToast('Tampilan diperbarui','success')}
-function saveIntegration(){const s=getSettings();s.waKey=document.getElementById('setWAKey').value;s.smtpHost=document.getElementById('setSMTPHost').value;s.emailFrom=document.getElementById('setEmailFrom').value;saveSettingsToStorage(s);showToast('Integrasi disimpan','success')}
-function applyDisplaySettings(s){document.documentElement.style.fontSize=s.fontSize==='large'?'18px':(s.fontSize==='small'?'14px':'16px')}
+function loadSettingsForm() {
+  const s = getSettings();
+  document.getElementById("setNamaGereja").value = s.namaGereja;
+  document.getElementById("setKodeGereja").value = s.kodeGereja;
+  document.getElementById("setAlamat").value = s.alamat;
+  document.getElementById("setTelp").value = s.telp;
+  document.getElementById("setEmail").value = s.email;
+  document.getElementById("setWebsite").value = s.website;
+  document.getElementById("setUsername").value = s.username;
+  document.getElementById("setPassword").value = "";
+  document.getElementById("setPasswordConfirm").value = "";
+  document.getElementById("setNotifWA").checked = s.notifWA;
+  document.getElementById("setNotifSMS").checked = s.notifSMS;
+  document.getElementById("setNotifEmail").checked = s.notifEmail;
+  document.getElementById("setFontSize").value = s.fontSize;
+  document.getElementById("setMode").value = s.mode;
+  document.getElementById("setWAKey").value = s.waKey;
+  document.getElementById("setSMTPHost").value = s.smtpHost;
+  document.getElementById("setEmailFrom").value = s.emailFrom;
+  document.getElementById("sidebarChurchName").textContent = s.namaGereja || "Gereja Anda";
+}
+
+function saveSettings() {
+  const s = getSettings();
+  s.namaGereja = document.getElementById("setNamaGereja").value;
+  s.kodeGereja = document.getElementById("setKodeGereja").value;
+  s.alamat = document.getElementById("setAlamat").value;
+  s.telp = document.getElementById("setTelp").value;
+  s.email = document.getElementById("setEmail").value;
+  s.website = document.getElementById("setWebsite").value;
+  saveSettingsToStorage(s);
+  document.getElementById("sidebarChurchName").textContent = s.namaGereja;
+  showToast("Profil gereja disimpan", "success");
+}
+
+function saveAccount() {
+  const s = getSettings();
+  const u = document.getElementById("setUsername").value.trim(),
+    p = document.getElementById("setPassword").value,
+    c = document.getElementById("setPasswordConfirm").value;
+  if (!u) { showToast("Username harus diisi", "error"); return; }
+  if (p && p !== c) { showToast("Password tidak cocok", "error"); return; }
+  s.username = u;
+  if (p) s.password = p;
+  saveSettingsToStorage(s);
+  showToast("Akun disimpan", "success");
+}
+
+function saveNotifSettings() {
+  const s = getSettings();
+  s.notifWA = document.getElementById("setNotifWA").checked;
+  s.notifSMS = document.getElementById("setNotifSMS").checked;
+  s.notifEmail = document.getElementById("setNotifEmail").checked;
+  saveSettingsToStorage(s);
+  showToast("Preferensi disimpan", "success");
+}
+
+function saveDisplaySettings() {
+  const s = getSettings();
+  s.fontSize = document.getElementById("setFontSize").value;
+  s.mode = document.getElementById("setMode").value;
+  saveSettingsToStorage(s);
+  applyDisplaySettings(s);
+  showToast("Tampilan diperbarui", "success");
+}
+
+function saveIntegration() {
+  const s = getSettings();
+  s.waKey = document.getElementById("setWAKey").value;
+  s.smtpHost = document.getElementById("setSMTPHost").value;
+  s.emailFrom = document.getElementById("setEmailFrom").value;
+  saveSettingsToStorage(s);
+  showToast("Integrasi disimpan", "success");
+}
+
+function applyDisplaySettings(s) {
+  document.documentElement.style.fontSize = s.fontSize === "large" ? "18px" : s.fontSize === "small" ? "14px" : "16px";
+}
 
 // Backup & Restore Database Module
-function exportData(){const all={};Object.keys(STORAGE_KEYS).forEach(k=>all[k]=getData(STORAGE_KEYS[k]));const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`backup_${new Date().toISOString().slice(0,10)}.json`;a.click();showToast('Data berhasil diekspor','success')}
-function restoreData(){const file=document.getElementById('restoreFileInput').files[0];if(!file){showToast('Pilih file backup','error');return}const reader=new FileReader();reader.onload=function(e){try{const data=JSON.parse(e.target.result);showConfirm('Timpa semua data dengan file ini?',()=>{Object.keys(STORAGE_KEYS).forEach(k=>{if(data[k])localStorage.setItem(STORAGE_KEYS[k],JSON.stringify(data[k]))});showToast('Data berhasil dipulihkan, reload...','success');setTimeout(()=>location.reload(),1500)})}catch(ex){showToast('File tidak valid','error')}};reader.readAsText(file)}
-function resetAllData(){showConfirm('Hapus SEMUA data? Tindakan ini tidak bisa dibatalkan.',()=>{Object.keys(STORAGE_KEYS).forEach(k=>localStorage.removeItem(STORAGE_KEYS[k]));showToast('Semua data direset','success');setTimeout(()=>location.reload(),1500)})}
+function exportData() {
+  const all = {};
+  Object.keys(STORAGE_KEYS).forEach((k) => (all[k] = getData(STORAGE_KEYS[k])));
+  const blob = new Blob([JSON.stringify(all, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  showToast("Data berhasil diekspor", "success");
+}
+
+function restoreData() {
+  const file = document.getElementById("restoreFileInput").files[0];
+  if (!file) { showToast("Pilih file backup", "error"); return; }
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      showConfirm("Timpa semua data dengan file ini?", () => {
+        Object.keys(STORAGE_KEYS).forEach((k) => {
+          if (data[k]) localStorage.setItem(STORAGE_KEYS[k], JSON.stringify(data[k]));
+        });
+        showToast("Data berhasil dipulihkan, reload...", "success");
+        setTimeout(() => location.reload(), 1500);
+      });
+    } catch (ex) { showToast("File tidak valid", "error"); }
+  };
+  reader.readAsText(file);
+}
+
+function resetAllData() {
+  showConfirm("Hapus SEMUA data? Tindakan ini tidak bisa dibatalkan.", () => {
+    Object.keys(STORAGE_KEYS).forEach((k) => localStorage.removeItem(STORAGE_KEYS[k]));
+    showToast("Semua data direset", "success");
+    setTimeout(() => location.reload(), 1500);
+  });
+}
 
 // Dashboard Logic & Analytics Rendering Engine
 let chartK, chartJ;
-function renderCharts(){
-    if(typeof Chart === 'undefined') { console.warn('Chart.js belum dimuat di HTML.'); return; }
-    const k=getData('gd_keuangan'), j=getData('gd_jemaat');
-    const ctx1=document.getElementById('chartKeuangan')?.getContext('2d');
-    if(ctx1){if(chartK)chartK.destroy();const months=['Jan','Feb','Mar','Apr','Mei','Jun'];const masuk=Array(6).fill(0),keluar=Array(6).fill(0);k.forEach(i=>{const m=new Date(i.tanggal).getMonth();if(m>=0&&m<6)i.jenis==='masuk'?masuk[m]+=i.jumlah:keluar[m]+=i.jumlah});chartK=new Chart(ctx1,{type:'bar',data:{labels:months,datasets:[{label:'Masuk',data:masuk,backgroundColor:'#4caf84',borderRadius:6},{label:'Keluar',data:keluar,backgroundColor:'#e0556a',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}})}
-    const ctx2=document.getElementById('chartJemaat')?.getContext('2d');
-    if(ctx2){if(chartJ)chartJ.destroy();const pria=j.filter(i=>i.gender==='Pria').length,wanita=j.filter(i=>i.gender==='Wanita').length;chartJ=new Chart(ctx2,{type:'doughnut',data:{labels:['Pria','Wanita'],datasets:[{data:[pria,wanita],backgroundColor:['#2c5282','#e8c547']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}})}
+function renderCharts() {
+  if (typeof Chart === "undefined") {
+    console.warn("Chart.js belum dimuat di HTML.");
+    return;
+  }
+  const k = getData("gd_keuangan"), j = getData("gd_jemaat");
+  const ctx1 = document.getElementById("chartKeuangan")?.getContext("2d");
+  if (ctx1) {
+    if (chartK) chartK.destroy();
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun"];
+    const masuk = Array(6).fill(0), keluar = Array(6).fill(0);
+    k.forEach((i) => {
+      const m = new Date(i.tanggal).getMonth();
+      if (m >= 0 && m < 6) i.jenis === "masuk" ? (masuk[m] += i.jumlah) : (keluar[m] += i.jumlah);
+    });
+    chartK = new Chart(ctx1, {
+      type: "bar",
+      data: {
+        labels: months,
+        datasets: [
+          { label: "Masuk", data: masuk, backgroundColor: "#4caf84", borderRadius: 6 },
+          { label: "Keluar", data: keluar, backgroundColor: "#e0556a", borderRadius: 6 },
+        ],
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+    });
+  }
+  const ctx2 = document.getElementById("chartJemaat")?.getContext("2d");
+  if (ctx2) {
+    if (chartJ) chartJ.destroy();
+    const pria = j.filter((i) => i.gender === "Pria").length, wanita = j.filter((i) => i.gender === "Wanita").length;
+    chartJ = new Chart(ctx2, {
+      type: "doughnut",
+      data: { labels: ["Pria", "Wanita"], datasets: [{ data: [pria, wanita], backgroundColor: ["#2c5282", "#e8c547"] }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+    });
+  }
 }
 
-function renderDashboard(){
-    const j=getData('gd_jemaat'), k=getData('gd_keuangan'), jd=getData('gd_jadwal'), inv=getData('gd_inventaris'), pel=getData('gd_pelayan');
-    let saldo=0; k.forEach(i=>saldo+=i.jenis==='masuk'?i.jumlah:-i.jumlah);
-    document.getElementById('dashboardStats').innerHTML=`<div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700"><i class="fa-solid fa-users"></i></div><div><h3 class="text-lg md:text-xl font-bold">${j.length}</h3><p class="text-xs text-gray-500">Jemaat</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700"><i class="fa-solid fa-user-tie"></i></div><div><h3 class="text-lg md:text-xl font-bold">${pel.length}</h3><p class="text-xs text-gray-500">Pelayan</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700"><i class="fa-solid fa-calendar-check"></i></div><div><h3 class="text-lg md:text-xl font-bold">${jd.filter(i=>i.status==='Terjadwal'||i.status==='Berlangsung').length}</h3><p class="text-xs text-gray-500">Jadwal</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700"><i class="fa-solid fa-wallet"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${saldo.toLocaleString('id-ID')}</h3><p class="text-xs text-gray-500">Saldo</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fa-solid fa-box-archive"></i></div><div><h3 class="text-lg md:text-xl font-bold">${inv.length}</h3><p class="text-xs text-gray-500">Inventaris</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700"><i class="fa-solid fa-chart-line"></i></div><div><h3 class="text-lg md:text-xl font-bold">${k.length}</h3><p class="text-xs text-gray-500">Transaksi</p></div></div>`;
-    if(!document.getElementById('page-dashboard')?.classList.contains('hidden')) setTimeout(renderCharts, 100);
-    
-    // Modernized Dashboard Recent Activities Table
-    const rc=document.getElementById('recentKebutuhanTable');
-    if(rc){
-        const r=jd.slice(0,5);
-        if(r.length){
-            let h='<table class="modern-table text-sm"><thead><tr><th>Tanggal</th><th>Kegiatan</th><th>Lokasi</th><th>Status</th></tr></thead><tbody>';
-            r.forEach(i=>{h+=`<tr><td data-label="Tanggal">${new Date(i.tanggal).toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</td><td data-label="Kegiatan"><strong>${i.nama}</strong></td><td data-label="Lokasi">${i.lokasi||'-'}</td><td data-label="Status"><span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">${i.status}</span></td></tr>`});
-            h+='</tbody></table>'; rc.innerHTML=h;
-        }else{ rc.innerHTML='<div class="text-center py-6 text-gray-400">Belum ada jadwal terbaru</div>'}
+function renderDashboard() {
+  const j = getData("gd_jemaat"),
+    k = getData("gd_keuangan"),
+    jd = getData("gd_jadwal"),
+    inv = getData("gd_inventaris"),
+    pel = getData("gd_pelayan");
+  let saldo = 0;
+  k.forEach((i) => (saldo += i.jenis === "masuk" ? i.jumlah : -i.jumlah));
+  document.getElementById("dashboardStats").innerHTML =
+    `<div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700"><i class="fa-solid fa-users"></i></div><div><h3 class="text-lg md:text-xl font-bold">${j.length}</h3><p class="text-xs text-gray-500">Jemaat</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700"><i class="fa-solid fa-user-tie"></i></div><div><h3 class="text-lg md:text-xl font-bold">${pel.length}</h3><p class="text-xs text-gray-500">Pelayan</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700"><i class="fa-solid fa-calendar-check"></i></div><div><h3 class="text-lg md:text-xl font-bold">${jd.filter((i) => i.status === "Terjadwal" || i.status === "Berlangsung").length}</h3><p class="text-xs text-gray-500">Jadwal</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700"><i class="fa-solid fa-wallet"></i></div><div class="min-w-0 flex-1"><h3 class="text-lg md:text-xl font-bold truncate cursor-pointer select-none active:scale-95 transition-transform" onclick="this.classList.toggle('truncate')">Rp ${saldo.toLocaleString("id-ID")}</h3><p class="text-xs text-gray-500">Saldo</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500"><i class="fa-solid fa-box-archive"></i></div><div><h3 class="text-lg md:text-xl font-bold">${inv.length}</h3><p class="text-xs text-gray-500">Inventaris</p></div></div><div class="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 stat-card"><div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700"><i class="fa-solid fa-chart-line"></i></div><div><h3 class="text-lg md:text-xl font-bold">${k.length}</h3><p class="text-xs text-gray-500">Transaksi</p></div></div>`;
+  if (!document.getElementById("page-dashboard")?.classList.contains("hidden"))
+    setTimeout(renderCharts, 100);
+
+  const rc = document.getElementById("recentKebutuhanTable");
+  if (rc) {
+    const r = jd.slice(0, 5);
+    if (r.length) {
+      let h = '<table class="modern-table text-sm"><thead><tr><th>Tanggal</th><th>Kegiatan</th><th>Lokasi</th><th>Status</th></tr></thead><tbody>';
+      r.forEach((i) => {
+        h += `<tr><td data-label="Tanggal">${new Date(i.tanggal).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</td><td data-label="Kegiatan"><strong>${i.nama}</strong></td><td data-label="Lokasi">${i.lokasi || "-"}</td><td data-label="Status"><span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">${i.status}</span></td></tr>`;
+      });
+      h += "</tbody></table>";
+      rc.innerHTML = h;
+    } else {
+      rc.innerHTML = '<div class="text-center py-6 text-gray-400">Belum ada jadwal terbaru</div>';
     }
+  }
 }
 
 // Master Router Sync
-function refreshAll(){
-    const p=document.querySelector('.page:not(.hidden)')?.id?.replace('page-','');
-    if(p==='dashboard') renderDashboard();
-    if(p==='jemaat') renderJemaatTable();
-    if(p==='keluarga') renderKeluargaTable();
-    if(p==='pelayan') renderPelayanTable();
-    if(p==='keuangan'){ renderKeuanganTable(); renderKeuanganStats(); }
-    if(p==='inventaris') renderInventarisTable();
-    if(p==='jadwal') renderJadwalTable();
-    if(p==='absensi') renderAbsensiTable();
-    if(p==='notifikasi') renderNotifikasiTable();
-    if(p==='dokumen') generateReport();
-    if(p==='pengaturan') loadSettingsForm();
+function refreshAll() {
+  const p = document.querySelector(".page:not(.hidden)")?.id?.replace("page-", "");
+  if (p === "dashboard") renderDashboard();
+  if (p === "jemaat") renderJemaatTable();
+  if (p === "keluarga") renderKeluargaTable();
+  if (p === "pelayan") renderPelayanTable();
+  if (p === "keuangan") { renderKeuanganTable(); renderKeuanganStats(); }
+  if (p === "inventaris") renderInventarisTable();
+  if (p === "jadwal") renderJadwalTable();
+  if (p === "absensi") renderAbsensiTable();
+  if (p === "notifikasi") renderNotifikasiTable();
+  if (p === "dokumen") generateReport();
+  if (p === "pengaturan") loadSettingsForm();
 }
-function updateDate(){const el=document.getElementById('currentDate'); if(el) el.textContent=new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
 
-// Core App Initialization
-document.addEventListener('DOMContentLoaded',()=>{
-    initDatePickers(); populateTimeSelects(); switchPage('dashboard');
-    applyDisplaySettings(getSettings()); updateDate(); setInterval(updateDate,60000)
+function updateDate() {
+  const el = document.getElementById("currentDate");
+  if (el) el.textContent = new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
+// ==========================================
+// 🚀 EVENT LISTENERS - INITIALIZATION
+// Semua aksi klik dipasang hanya ketika DOM siap
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+  initDatePickers();
+  populateTimeSelects();
+  switchPage("dashboard");
+  applyDisplaySettings(getSettings());
+  updateDate();
+  setInterval(updateDate, 60000);
+
+  // 1. Sidebar Navigasi Menu
+  document.querySelectorAll(".nav-item").forEach((b) =>
+    b.addEventListener("click", (e) => switchPage(e.currentTarget.dataset.page))
+  );
+
+  // 2. Tab Pengaturan
+  document.querySelectorAll(".tab-btn").forEach((b) =>
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".tab-btn").forEach((x) => x.classList.remove("active", "bg-primary", "text-white"));
+      this.classList.add("active", "bg-primary", "text-white");
+      document.querySelectorAll(".tab-content").forEach((x) => x.classList.remove("active"));
+      document.getElementById("tab-" + this.dataset.tab).classList.add("active");
+    })
+  );
+
+  // 3. Penutup Modal (Klik Latar Belakang Gelap)
+  document.querySelectorAll(".modal-overlay").forEach((o) =>
+    o.addEventListener("click", function (e) {
+      if (e.target === this) this.classList.add("hidden");
+    })
+  );
+
+  // 4. Tombol Kalender (Prev & Next Bulan)
+  const dpPrev = document.getElementById("dpPrev");
+  const dpNext = document.getElementById("dpNext");
+  if(dpPrev) {
+    dpPrev.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (dpM === 0) { dpY--; dpM = 11; } else dpM--;
+      renderCalendar(dpY, dpM);
+    });
+  }
+  if(dpNext) {
+    dpNext.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (dpM === 11) { dpY++; dpM = 0; } else dpM++;
+      renderCalendar(dpY, dpM);
+    });
+  }
 });

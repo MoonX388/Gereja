@@ -24,24 +24,29 @@ export class AuthService {
     return this.generateToken(user);
   }
 
-  async login(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
+  async login(emailOrUsername: string, password: string) {
+    // Cari berdasarkan email dulu, kalau gak ketemu cari berdasarkan username
+    let user = await this.usersService.findByEmail(emailOrUsername);
+
+    if (!user) {
+      user = await this.usersService.findByUsername(emailOrUsername);
+    }
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Email atau password salah');
+      throw new UnauthorizedException('Email/Username atau password salah');
     }
     return this.generateToken(user);
   }
-
   private generateToken(user: any) {
-  const payload = { sub: user.id, email: user.email, role: user.role };
-  return {
-    access_token: this.jwtService.sign(payload),
-    user: {
-      id: user.id,
-      nama: user.nama,
-      email: user.email,
-      role: user.role,   // ← tambahkan ini
-    },
-  };
-}
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        nama: user.nama,
+        email: user.email,
+        role: user.role, // ← tambahkan ini
+      },
+    };
+  }
 }
