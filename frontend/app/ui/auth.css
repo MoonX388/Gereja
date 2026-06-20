@@ -1,0 +1,209 @@
+/* ========== BASE ========== */
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.bg-light {
+  background-color: #f7f8fa;
+}
+
+.bg-primary {
+  background-color: #1e3a5f;
+}
+
+.bg-secondary {
+  background-color: #2c5282;
+}
+
+.text-dark {
+  color: #0f1a2e;
+}
+
+.text-primary {
+  color: #1e3a5f;
+}
+
+.text-gray-400 {
+  color: #9ca3af;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+.border-primary {
+  border-color: #1e3a5f;
+}
+
+.hover\:bg-secondary:hover {
+  background-color: #2c5282;
+}
+
+.focus\:border-primary:focus {
+  border-color: #1e3a5f;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+/* Scrollbar tipis */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 20px;
+}
+
+/* ========== ANIMASI FADE + SCALE ========== */
+.page-transition {
+  animation: fadeScaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes fadeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ========== TOAST ========== */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  animation:
+    slideInRight 0.3s ease,
+    fadeOut 0.3s ease 3.7s forwards;
+  border-left: 4px solid;
+}
+.toast-success {
+  border-color: #10b981;
+}
+.toast-item.toast-success {
+  background: #ecfdf5;
+}
+.toast-error {
+  border-color: #ef4444;
+}
+.toast-item.toast-error {
+  background: #dc2626;
+  border-color: transparent;
+  color: white;
+}
+.toast-item.toast-error .toast-message {
+  color: white;
+}
+.toast-info {
+  border-color: #3b82f6;
+}
+.toast-icon {
+  font-size: 1.5rem;
+}
+.toast-message {
+  font-size: 0.875rem;
+  color: #1f2937;
+  flex: 1;
+}
+@keyframes slideInRight {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* ========== TAB ========== */
+.tab-btn {
+  transition: all 0.2s ease;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: transparent;
+  color: #6b7280;
+  font-weight: 600;
+}
+.tab-btn.active {
+  background: #1e3a5f;
+  color: white;
+  border-bottom: 2px solid #1e3a5f;
+}
+
+/* ========== FORM ========== */
+.form-input,
+.form-select {
+  border: 2px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  width: 100%;
+  transition: all 0.2s;
+  background-color: white;
+}
+.form-input:focus,
+.form-select:focus {
+  border-color: #1e3a5f;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+/* ========== BUTTON ========== */
+.btn-primary {
+  background-color: #1e3a5f;
+  transition: all 0.2s;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  padding: 0.7rem 1rem;
+  width: 100%;
+  text-align: center;
+  color: white;
+}
+.btn-primary:hover {
+  background-color: #2c5282;
+  transform: translateY(-2px);
+}
+
+/* ========== CARD ========== */
+.login-card {
+  max-height: 85vh;
+  max-height: 85dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.scrollable-form {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}

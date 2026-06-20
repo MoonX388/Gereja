@@ -4,47 +4,56 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
+import '../ui/style.css';
+import '../ui/globals.css';
+import { AdminProvider } from './context/AdminContext';
+import AdminLayout from './components/AdminLayout';
+import Loading from '../components/loading'; // ⬅️ import komponen loading
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth(); // Jika ada fungsi logout/clearAuth dariuseAuth, masukkan di sini
+export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
   const router = useRouter();
-  
-  // State tambahan untuk memastikan pengecekan API selesai sebelum merender halaman
-  const [isAdminVerified, setIsAdminVerified] = useState<boolean>(false);
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        // Samakan rute login utama Anda (contoh: '/auth/login')
         router.push('/auth/login');
+        setIsChecking(false);
       } else {
         api.get('/auth/profile')
           .then(res => {
             if (res.data.role === 'admin') {
               setIsAdminVerified(true);
             } else {
-              // Hapus token dan tendang user jika bukan admin
               localStorage.removeItem('token');
-              router.push('/auth/login');
+              router.push('/status/403');
             }
           })
           .catch(() => {
             localStorage.removeItem('token');
-            router.push('/auth/login');
+            router.push('/status/500');
+          })
+          .finally(() => {
+            setIsChecking(false);
           });
       }
     }
   }, [user, loading, router]);
 
-  // Proteksi ketat: Jangan render 'children' sebelum loading selesai, 
-  // user terisi, DAN verifikasi role admin dari API selesai.
-  if (loading || !user || !isAdminVerified) {
+  // ✅ Tampilkan komponen loading selama pengecekan
+  if (isChecking || loading || !user || !isAdminVerified) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Memeriksa akses...
+      <div className="min-h-screen flex items-center justify-center bg-light">
+        <Loading />
       </div>
     );
   }
 
-  return <>{children}</>;
+  return (
+    <AdminProvider>
+      <AdminLayout>{children}</AdminLayout>
+    </AdminProvider>
+  );
 }

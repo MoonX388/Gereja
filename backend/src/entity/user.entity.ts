@@ -18,6 +18,12 @@ export class User {
   nama!: string;
 
   @Column({ nullable: true })
+  gender?: string;
+
+  @Column({ nullable: true })
+  baptis?: string;
+
+  @Column({ nullable: true })
   alamat?: string;
 
   @Column({ nullable: true })
@@ -29,8 +35,20 @@ export class User {
   @Column({ nullable: true })
   tanggalLahir?: string;
 
+  @Column({ nullable: true })
+  tempatLahir?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
+
+  @Column({ nullable: true })
+  nikah?: string;
+
+  @Column({ nullable: true })
+  pekerjaan?: string;
+
+  @Column({ default: 'Aktif' })
+  status!: string;
 
   @Column({ default: 'jemaat' })
   role!: string;

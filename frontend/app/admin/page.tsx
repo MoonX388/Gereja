@@ -1,60 +1,49 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-
-interface BridgeMessageData {
-  action: "DATA_CHANGED";
-  key: string;
-  payload: any[];
-}
+import { useAdmin } from './context/AdminContext';
+import Dashboard from './pages/Dashboard';
+import DataJemaat from './pages/DataJemaat';
+import KartuKeluarga from './pages/KartuKeluarga';
+import PelayanGereja from './pages/PelayanGereja';
+import Keuangan from './pages/Keuangan';
+import Inventaris from './pages/Inventaris';
+import Jadwal from './pages/Jadwal';
+import Absensi from './pages/Absensi';
+import Notifikasi from './pages/Notifikasi';
+import Dokumen from './pages/Dokumen';
+import Pengaturan from './pages/Pengaturan';
 
 export default function AdminPage() {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [logAktivitas, setLogAktivitas] = useState<string>(
-    "Belum ada perubahan data.",
-  );
+  const { currentPage } = useAdmin();
 
-  useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      // 1. KEAMANAN: Tolak pesan jika bukan dari domain yang sama
-      if (event.origin !== window.location.origin) return;
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'jemaat':
+        return <DataJemaat />;
+      case 'keluarga':
+        return <KartuKeluarga />;
+      case 'pelayan':
+        return <PelayanGereja />;
+      case 'keuangan':
+        return <Keuangan />;
+      case 'inventaris':
+        return <Inventaris />;
+      case 'jadwal':
+        return <Jadwal />;
+      case 'absensi':
+        return <Absensi />;
+      case 'notifikasi':
+        return <Notifikasi />;
+      case 'dokumen':
+        return <Dokumen />;
+      case 'pengaturan':
+        return <Pengaturan />;
+      default:
+        return <Dashboard />;
+    }
+  };
 
-      // 2. STABILITAS: Pastikan data berbentuk objek
-      if (!event.data || typeof event.data !== "object") return;
-
-      const data = event.data as BridgeMessageData;
-
-      // Menangkap data dari fungsi setData() di HTML
-      if (data.action === "DATA_CHANGED") {
-        const { key, payload } = data;
-
-        // Pembersihan nama key
-        const namaTabel = key.replace("gd_", "").toUpperCase();
-        setLogAktivitas(
-          `[${new Date().toLocaleTimeString()}] Tabel ${namaTabel} diperbarui! Total data: ${payload.length}`,
-        );
-
-        console.log(`Log Data Global Bridge (${namaTabel}):`, payload);
-      }
-    };
-
-    window.addEventListener("message", handler);
-    return () => {
-      window.removeEventListener("message", handler);
-    };
-  }, []);
-
-  return (
-    <iframe
-      ref={iframeRef}
-      src="/admin/dashboard.html"
-      style={{
-        width: "100%",
-        height: "100vh", // ← INI KUNCI PERBAIKANNYA (Mengganti flex: 1)
-        border: "none",
-        display: "block", // Mencegah ada celah putih di bawah iframe
-      }}
-      title="Admin Dashboard"
-    />
-  );
+  return renderPage();
 }

@@ -1,72 +1,59 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm'; // Sesuai ORM kamu
+import { Injectable } from '@nestjs/common'; // Hapus OnModuleInit
+import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { DataGereja } from './entities/data-gereja.entity'; // Contoh entity kamu
+import { User } from '../../entity/user.entity';
 
 @Injectable()
-export class AiService implements OnModuleInit {
+export class AiService { // Tidak perlu implements OnModuleInit lagi
   private generator: any;
 
   constructor(
-    @InjectRepository(DataGereja)
-    private readonly dataGerejaRepository: Repository<DataGereja>, // Inject DB
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
-  async onModuleInit() {
-    const { pipeline } = await import('@xenova/transformers');
-    this.generator = await pipeline(
-      'text-generation',
-      'Xenova/Qwen1.5-0.5B-Chat',
-      { quantized: true }
-    );
-    console.log('✅ Model AI Lokal + Database Siap!');
-  }
+  // Kita hapus fungsi onModuleInit() lama, dan pindahkan logikanya ke bawah 👇
 
   async generate(prompt: string, nomorHP: string): Promise<string> {
-    if (!this.generator) throw new Error('Model AI belum siap');
+    // 🌟 TRIK LAZY LOADING: Model baru di-load jika belum siap di memori
+    if (!this.generator) {
+      console.log('⏳ RAM Aman! Memuat Model AI untuk pertama kalinya...');
+      const { pipeline } = await import('@xenova/transformers');
+      this.generator = await pipeline(
+        'text-generation',
+        'Xenova/Qwen1.5-0.5B-Chat',
+        { quantized: true }
+      );
+      console.log('✅ Model AI Lokal Berhasil Masuk Memori!');
+    }
 
-    // 1. AMBIL DATA DARI DATABASE (Contoh: Mengambil jadwal kegiatan terdekat)
-    const jadwalKegiatan = await this.dataGerejaRepository.find({
-      take: 3,
-      order: { tanggal: 'ASC' }
+    // --- Sisa kode pencarian database di bawah ini tetap sama seperti kemarin ---
+    const userGereja = await this.userRepository.findOne({
+      where: { telepon: nomorHP },
     });
 
-    // 2. Ubah data DB menjadi teks string agar bisa dibaca AI
-    const teksDataDB = jadwalKegiatan.map(
-      (data) => `- ${data.namaKegiatan}: Jam ${data.jam}, Tanggal ${data.tanggal}`
-    ).join('\n');
+    let infoUser = `User ini belum terdaftar di database Jemaat resmi.`;
+    if (userGereja) {
+      infoUser = `User terdaftar di database Jemaat. Nama: ${userGereja.nama}, Role: ${userGereja.role}, Alamat: ${userGereja.alamat || 'Belum diisi'}.`;
+    }
 
     const pembatas = '===JAWABAN_AI===';
-
-    // 3. Masukkan data dari DB tersebut ke dalam Instruksi AI (Context Injection)
-    const chatPrompt = `Instruksi: Kamu adalah AI asisten WhatsApp Gereja yang ramah dan sopan. Kamu tahu nomor WhatsApp user adalah ${nomorHP}.
-    
-Gunakan DATA INTERNAL dari database di bawah ini untuk menjawab pertanyaan jika relevan:
-${teksDataDB}
-
-User: ${prompt}
-
-${pembatas}\n`;
+    const chatPrompt = `Instruksi: Kamu adalah AI asisten WhatsApp Gereja yang ramah, sopan, dan menjawab singkat.\n\nData Pengirim:\n${infoUser}\n\nUser: ${prompt}\n\n${pembatas}\n`;
 
     const result = await this.generator(chatPrompt, {
-      max_new_tokens: 60, 
-      temperature: 0.4, // Diturunkan agar AI lebih patuh pada data DB dan tidak mengarang
+      max_new_tokens: 40, 
+      temperature: 0.4,
       do_sample: true,
       repetition_penalty: 1.2,
     });
 
     let jawaban = result[0].generated_text;
-
     if (jawaban.includes(pembatas)) {
       jawaban = jawaban.split(pembatas)[1].trim();
     } else {
       jawaban = jawaban.replace(chatPrompt, '').trim();
     }
 
-    if (!jawaban || jawaban.includes('User:')) {
-      jawaban = 'Halo! Ada yang bisa saya bantu terkait informasi gereja?';
-    }
-
-    return jawaban;
+    return jawaban || 'Ada yang bisa saya bantu?';
   }
 }

@@ -1,28 +1,41 @@
-import { Controller, Get, Delete, UseGuards, Request, Param } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
-  @UseGuards(AuthGuard('jwt'))
+  // Ambil profil diri sendiri (Bawaan lama kamu)
+  // @UseGuards(AuthGuard('jwt'))
   @Get('me')
   async getMe(@Request() req) {
     const { password, ...user } = req.user;
     return user;
   }
 
-  // Endpoint untuk menghapus user (jika diperlukan)
-  @UseGuards(AuthGuard('jwt'))
+  // 🆕 Ambil SEMUA data jemaat untuk tabel dashboard
+  @Get()
+  async getAllUsers() {
+    return this.usersService.findAll();
+  }
+
+  // 🆕 Tambah jemaat baru
+  @Post()
+  async createUser(@Body() body: any) {
+    return this.usersService.create(body);
+  }
+
+  // 🆕 Update biodata jemaat ATAU ganti JABATAN (role)
+  @Put(':id')
+  async updateUser(@Param('id') id: number, @Body() body: any) {
+    await this.usersService.update(id, body);
+    return { message: 'Data jemaat diperbarui' };
+  }
+
+  // 🆕 Hapus jemaat
   @Delete(':id')
-  async removeUser(@Param('id') id: number, @Request() req) {
-    // hanya admin atau user sendiri yang bisa hapus (tambahkan logika authorization)
-    // Sementara kita izinkan user menghapus dirinya sendiri
-    if (req.user.id !== id) {
-      throw new Error('Forbidden');
-    }
+  async removeUser(@Param('id') id: number) {
     await this.usersService.remove(id);
-    return { message: 'User deleted' };
+    return { message: 'Jemaat berhasil dihapus' };
   }
 }

@@ -12,7 +12,7 @@ export default function Home() {
     >
       <div className="text-center">
         <i className="fa-solid fa-church text-6xl text-[#e8c547] mb-6"></i>
-        <h1 className="text-5xl font-bold text-white mb-4">GerejaDigital</h1>
+        <h1 className="text-5xl font-bold text-white mb-4">Gereja Pintar</h1>
         <p className="text-xl text-gray-200 mb-8">Sistem Manajemen Gereja Terpadu</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link

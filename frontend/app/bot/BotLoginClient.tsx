@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://super-duper-space-bassoon-5g4j6p44ww6w3p69-3001.app.github.dev';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://congenial-rotary-phone-4j4wg6q769x4fqgpq-3001.app.github.dev';
 
 export default function BotLoginClient() {
   const [token, setToken] = useState<string>('');

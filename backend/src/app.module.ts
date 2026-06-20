@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BotModule } from './bot/bot.module';
-import { User } from './entity/user.entity';
 
 @Module({
   imports: [

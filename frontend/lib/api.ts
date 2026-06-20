@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL:
-    "https://super-duper-space-bassoon-5g4j6p44ww6w3p69-3001.app.github.dev/",
+    "http://localhost:3001",
 });
 
 api.interceptors.request.use((config) => {

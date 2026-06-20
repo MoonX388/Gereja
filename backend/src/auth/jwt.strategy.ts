@@ -14,8 +14,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.usersService.findById(payload.sub);
-    if (!user) throw new UnauthorizedException();
+    // Asumsi ID di DB adalah number, konversi dari string
+    const userId = Number(payload.sub);
+    const user = await this.usersService.findById(userId);
+    
+    if (!user) {
+      throw new UnauthorizedException();
+    }
     return user;
-}
+  }
 }
