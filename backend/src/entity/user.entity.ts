@@ -33,10 +33,22 @@ export class User {
   jenisKelamin?: string;
 
   @Column({ nullable: true })
-  tanggalLahir?: string;
+  tglLahir?: string;
 
   @Column({ nullable: true })
   tempatLahir?: string;
+
+  @Column({ nullable: true })
+  tempatBaptis?: string;
+
+  @Column({ nullable: true })
+  tglBaptis?: string;
+
+  @Column({ nullable: true })
+  tempatSidi?: string;
+
+  @Column({ nullable: true })
+  tglSidi?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -3,6 +3,24 @@
 import { useAdmin } from '../context/AdminContext';
 import { useEffect, useState } from 'react';
 
+// 1. Import komponen Chart.js dan React Chart.js
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
+
+// 2. Registrasi elemen yang dibutuhkan Chart.js
+ChartJS.register(
+  CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement
+);
+
 export default function Dashboard() {
   const { jemaat, pelayan, jadwal, inventaris, keuangan } = useAdmin();
   const [saldo, setSaldo] = useState(0);
@@ -29,6 +47,45 @@ export default function Dashboard() {
     { label: 'Transaksi', value: keuangan.length, icon: 'fa-chart-line', color: 'bg-indigo-100 text-indigo-700' },
   ];
 
+  // ==========================================
+  // LOGIKA GRAFIK KEUANGAN
+  // ==========================================
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'];
+  const masuk = new Array(6).fill(0);
+  const keluar = new Array(6).fill(0);
+
+  keuangan.forEach((i) => {
+    const m = new Date(i.tanggal).getMonth();
+    if (m >= 0 && m < 6) {
+      if (i.jenis === 'masuk') masuk[m] += i.jumlah;
+      else keluar[m] += i.jumlah;
+    }
+  });
+
+  const dataKeuangan = {
+    labels: months,
+    datasets: [
+      { label: 'Masuk', data: masuk, backgroundColor: '#4caf84', borderRadius: 6 },
+      { label: 'Keluar', data: keluar, backgroundColor: '#e0556a', borderRadius: 6 }
+    ]
+  };
+
+  // ==========================================
+  // LOGIKA DISTRIBUSI JEMAAT
+  // ==========================================
+  const pria = jemaat.filter((i) => i.gender === 'Pria').length;
+  const wanita = jemaat.filter((i) => i.gender === 'Wanita').length;
+
+  const dataJemaat = {
+    labels: ['Pria', 'Wanita'],
+    datasets: [
+      {
+        data: [pria, wanita],
+        backgroundColor: ['#2c5282', '#e8c547'],
+      }
+    ]
+  };
+
   return (
     <div>
       {/* Stats Cards */}
@@ -48,26 +105,61 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Charts Placeholder */}
+      {/* Area Grafik */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Chart Keuangan */}
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
           <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
             <i className="fa-solid fa-chart-line mr-2 text-[#e8c547]"></i>
             Grafik Keuangan 6 Bulan
           </h3>
-          <div className="h-72 flex items-center justify-center text-gray-400">
-            <p>Chart visualization placeholder</p>
-          </div>
+          
+          {/* Cek apakah ada data keuangan */}
+          {keuangan.length > 0 ? (
+            <div className="relative h-72 w-full">
+              <Bar 
+                data={dataKeuangan} 
+                options={{ 
+                  responsive: true, 
+                  maintainAspectRatio: false, 
+                  plugins: { legend: { position: 'bottom' } } 
+                }} 
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-72 text-gray-400">
+              <i className="fa-solid fa-chart-line text-5xl mb-3 opacity-50"></i>
+              <p className="text-lg">Belum ada data keuangan</p>
+            </div>
+          )}
         </div>
 
+        {/* Chart Jemaat */}
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
           <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
             <i className="fa-solid fa-chart-pie mr-2 text-[#e8c547]"></i>
             Distribusi Jemaat
           </h3>
-          <div className="h-72 flex items-center justify-center text-gray-400">
-            <p>Chart visualization placeholder</p>
-          </div>
+
+          {/* Cek apakah ada data jemaat */}
+          {jemaat.length > 0 ? (
+            <div className="relative h-72 w-full">
+              <Doughnut 
+                data={dataJemaat} 
+                options={{ 
+                  responsive: true, 
+                  maintainAspectRatio: false, 
+                  plugins: { legend: { position: 'bottom' } } 
+                }} 
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-72 text-gray-400">
+              {/* Ikon kembali disesuaikan menggunakan ikon jemaat kosong (users-slash) */}
+              <i className="fa-solid fa-users-slash text-5xl mb-3 opacity-50 block"></i>
+              <p className="text-lg">Belum ada data jemaat</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -106,7 +198,10 @@ export default function Dashboard() {
               </tbody>
             </table>
           ) : (
-            <div className="text-center py-8 text-gray-400">Belum ada jadwal</div>
+            <div className="text-center py-5 text-gray-400">
+              <i className="fa-solid fa-calendar-xmark text-5xl mb-3 block"></i>
+              <p className="text-lg">Belum ada jadwal</p>
+            </div>
           )}
         </div>
       </div>

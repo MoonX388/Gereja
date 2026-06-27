@@ -46,6 +46,7 @@ export class AuthService {
         nama: user.nama,
         email: user.email,
         role: user.role, // ← tambahkan ini
+        username: user.username, // ← tambahkan ini
       },
     };
   }

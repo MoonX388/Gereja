@@ -11,7 +11,7 @@ export function withRole(Component: React.ComponentType, allowedRoles: string[])
     useEffect(() => {
       if (!loading) {
         if (!user) router.push('/auth/login');
-        else if (!allowedRoles.includes(user.role)) router.push('/status/403');
+        else if (!allowedRoles.includes(user.role)) router.push('/error/403');
       }
     }, [user, loading, router]);
 

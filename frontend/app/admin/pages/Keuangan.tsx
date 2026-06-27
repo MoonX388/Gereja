@@ -46,7 +46,7 @@ export default function Keuangan() {
       return;
     }
     if (editingId) {
-      updateKeuangan(editingId, formData);
+      updateKeuangan(Number(editingId), formData);
     } else {
       addKeuangan(formData);
     }

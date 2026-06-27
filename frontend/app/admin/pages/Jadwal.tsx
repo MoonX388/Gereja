@@ -34,7 +34,7 @@ export default function Jadwal() {
       return;
     }
     if (editingId) {
-      updateJadwal(editingId, formData);
+      updateJadwal(Number(editingId), formData);
     } else {
       addJadwal(formData);
     }

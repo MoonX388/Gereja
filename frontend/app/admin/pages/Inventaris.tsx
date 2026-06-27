@@ -41,7 +41,7 @@ export default function Inventaris() {
       return;
     }
     if (editingId) {
-      updateInventaris(editingId, formData);
+      updateInventaris(Number(editingId), formData);
     } else {
       addInventaris(formData);
     }

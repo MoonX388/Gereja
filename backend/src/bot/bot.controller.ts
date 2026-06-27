@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  UnauthorizedException,
-  Post,
-  Body,
-  Res,
-} from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { BotService } from './bot.service';
 import { TokenService } from './token.service';
 
@@ -18,49 +9,31 @@ export class BotController {
     private readonly tokenService: TokenService,
   ) {}
 
-  @Get('login-url')
-  getLoginUrl(): { loginUrl: string } {
+  @Get('token')
+  getToken() {
     const token = this.tokenService.getToken();
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    return { loginUrl: `${frontendUrl}/bot-login?token=${token}` };
+    return { token: token };
   }
 
-  @Get('login')
-  redirectToLogin(@Res() res: Response) {
-    const token = this.tokenService.getToken();
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    res.redirect(`${frontendUrl}/bot-login?token=${token}`);
-  }
-
-  @Get('qr-string')
-  async getQrString(@Query('token') token: string): Promise<{ qr: string | null }> {
-    if (!token || !(await this.tokenService.validateToken(token))) {
-      throw new UnauthorizedException('Token tidak valid');
-    }
-    return { qr: this.botService.getQrString() };
+  // >>> TAMBAHKAN ENDPOINT INI <<<
+  @Get('qr')
+  getQr() {
+    const qr = this.botService.getQrString();
+    return { qr: qr || null };
   }
 
   @Post('request-pairing-code')
-  async requestPairingCode(
-    @Body('phoneNumber') phoneNumber: string,
-    @Body('token') token: string,
-  ) {
-    if (!token || !(await this.tokenService.validateToken(token))) {
-      throw new UnauthorizedException('Token tidak valid');
+  async requestPairingCode(@Body() body: { phoneNumber: string; token: string }) {
+    const isValid = await this.tokenService.validateToken(body.token);
+    if (!isValid) {
+      throw new HttpException('Token tidak valid atau kadaluarsa', HttpStatus.UNAUTHORIZED);
     }
-    if (!phoneNumber || !/^62\d{8,14}$/.test(phoneNumber)) {
-      throw new UnauthorizedException('Nomor tidak valid (format 62xxx)');
-    }
-    const code = await this.botService.requestPairingCode(phoneNumber);
-    return { code };
-  }
 
-  @Post('regenerate-token')
-  async regenerateToken(@Body('token') token: string): Promise<{ newToken: string }> {
-    if (!token || !(await this.tokenService.validateToken(token))) {
-      throw new UnauthorizedException('Token lama tidak valid');
+    try {
+      const code = await this.botService.requestPairingCode(body.phoneNumber);
+      return { code: code };
+    } catch (error) {
+      throw new HttpException('Gagal memproses kode pairing', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    const newToken = await this.tokenService.regenerateToken();
-    return { newToken };
   }
 }

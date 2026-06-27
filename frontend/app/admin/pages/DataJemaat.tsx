@@ -3,20 +3,27 @@
 import { useState } from 'react';
 import { useAdmin, Jemaat } from '../context/AdminContext';
 import Modal from '../components/Modal';
+import { useToast } from '@/app/components/ToastContext';
 
 export default function DataJemaat() {
+  const { showToast } = useToast();
   const { jemaat, addJemaat, updateJemaat, deleteJemaat } = useAdmin();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Omit<Jemaat, 'id'>>({
+  const [editingId, setEditingId] = useState<number | null>(null);
+  
+  // Update formData state untuk mendukung Tempat & Tanggal Baptis serta Sidi
+  const [formData, setFormData] = useState<any>({
     nama: '',
     gender: 'Pria',
-    baptis: 'Sudah',
     tempatLahir: '',
     tglLahir: '',
+    tempatBaptis: '',
+    tglBaptis: '',
+    tempatSidi: '',
+    tglSidi: '',
     alamat: '',
-    telp: '',
+    telepon: '',
     nikah: 'Belum Menikah',
     pekerjaan: '',
     status: 'Aktif',
@@ -28,31 +35,37 @@ export default function DataJemaat() {
       j.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleOpenModal = (item?: Jemaat) => {
+  const handleOpenModal = (item?: any) => {
     if (item) {
       setEditingId(item.id);
       setFormData({
-        nama: item.nama,
-        gender: item.gender,
-        baptis: item.baptis,
-        tempatLahir: item.tempatLahir,
-        tglLahir: item.tglLahir,
-        alamat: item.alamat,
-        telp: item.telp,
-        nikah: item.nikah,
-        pekerjaan: item.pekerjaan,
-        status: item.status,
+        nama: item.nama || '',
+        gender: item.gender || 'Pria',
+        tempatLahir: item.tempatLahir || '',
+        tglLahir: item.tglLahir || '',
+        tempatBaptis: item.tempatBaptis || '',
+        tglBaptis: item.tglBaptis || '',
+        tempatSidi: item.tempatSidi || '',
+        tglSidi: item.tglSidi || '',
+        alamat: item.alamat || '',
+        telepon: item.telepon || '',
+        nikah: item.nikah || 'Belum Menikah',
+        pekerjaan: item.pekerjaan || '',
+        status: item.status || 'Aktif',
       });
     } else {
       setEditingId(null);
       setFormData({
         nama: '',
         gender: 'Pria',
-        baptis: 'Sudah',
         tempatLahir: '',
         tglLahir: '',
+        tempatBaptis: '',
+        tglBaptis: '',
+        tempatSidi: '',
+        tglSidi: '',
         alamat: '',
-        telp: '',
+        telepon: '',
         nikah: 'Belum Menikah',
         pekerjaan: '',
         status: 'Aktif',
@@ -63,14 +76,19 @@ export default function DataJemaat() {
 
   const handleSave = () => {
     if (!formData.nama.trim()) {
-      alert('Nama wajib diisi');
+      // Panggil notifikasi error
+      showToast('Nama wajib diisi!', 'error'); 
       return;
     }
+    
     if (editingId) {
-      updateJemaat(editingId, formData);
-    } else {
+  updateJemaat(Number(editingId), formData); // Pastikan dibungkus Number() agar aman
+  showToast('Data jemaat berhasil diperbarui!', 'success');
+} else {
       addJemaat(formData);
+      showToast('Jemaat baru berhasil ditambahkan!', 'success');
     }
+    
     setIsModalOpen(false);
   };
 
@@ -105,20 +123,27 @@ export default function DataJemaat() {
                 <tr>
                   <th>Nama</th>
                   <th>Gender</th>
-                  <th>Baptis</th>
                   <th>Lahir</th>
+                  <th>Baptis</th>
+                  <th>Sidi</th>
                   <th>Alamat</th>
                   <th>Status</th>
                   <th className="text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredJemaat.map((item) => (
+                {filteredJemaat.map((item: any) => (
                   <tr key={item.id}>
                     <td className="font-semibold">{item.nama}</td>
                     <td>{item.gender}</td>
-                    <td>{item.baptis}</td>
                     <td>{item.tempatLahir ? `${item.tempatLahir}, ` : ''}{item.tglLahir || '-'}</td>
+                    
+                    {/* Menampilkan Data Baptis */}
+                    <td>{item.tempatBaptis ? `${item.tempatBaptis}, ` : ''}{item.tglBaptis || '-'}</td>
+                    
+                    {/* Menampilkan Data Sidi */}
+                    <td>{item.tempatSidi ? `${item.tempatSidi}, ` : ''}{item.tglSidi || '-'}</td>
+                    
                     <td className="text-xs">{item.alamat || '-'}</td>
                     <td>
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -170,30 +195,19 @@ export default function DataJemaat() {
               className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold mb-1">Jenis Kelamin</label>
-              <select
-                value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
-              >
-                <option>Pria</option>
-                <option>Wanita</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-1">Status Baptis</label>
-              <select
-                value={formData.baptis}
-                onChange={(e) => setFormData({ ...formData, baptis: e.target.value })}
-                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
-              >
-                <option>Sudah</option>
-                <option>Belum</option>
-              </select>
-            </div>
+          
+          <div>
+            <label className="block text-sm font-semibold mb-1">Jenis Kelamin</label>
+            <select
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+            >
+              <option>Pria</option>
+              <option>Wanita</option>
+            </select>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-1">Tempat Lahir</label>
@@ -214,6 +228,63 @@ export default function DataJemaat() {
               />
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">Telepon</label>
+            <input
+              type="text"
+              value={formData.telepon}
+              onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
+              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+            />
+          </div>
+
+          {/* Form Input Tempat & Tanggal Baptis */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1">Tempat Baptis</label>
+              <input
+                type="text"
+                value={formData.tempatBaptis}
+                placeholder="Kosongkan jika belum"
+                onChange={(e) => setFormData({ ...formData, tempatBaptis: e.target.value })}
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Tanggal Baptis</label>
+              <input
+                type="date"
+                value={formData.tglBaptis}
+                onChange={(e) => setFormData({ ...formData, tglBaptis: e.target.value })}
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+              />
+            </div>
+          </div>
+
+          {/* Form Input Tempat & Tanggal Sidi */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1">Tempat Sidi</label>
+              <input
+                type="text"
+                value={formData.tempatSidi}
+                placeholder="Kosongkan jika belum"
+                onChange={(e) => setFormData({ ...formData, tempatSidi: e.target.value })}
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Tanggal Sidi</label>
+              <input
+                type="date"
+                value={formData.tglSidi}
+                onChange={(e) => setFormData({ ...formData, tglSidi: e.target.value })}
+                className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold mb-1">Alamat</label>
             <textarea
@@ -223,13 +294,14 @@ export default function DataJemaat() {
               className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
             ></textarea>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-1">No. Telepon</label>
               <input
                 type="text"
-                value={formData.telp}
-                onChange={(e) => setFormData({ ...formData, telp: e.target.value })}
+                value={formData.telepon}
+                onChange={(e) => setFormData({ ...formData, telepon: e.target.value })}
                 className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
               />
             </div>
@@ -246,6 +318,7 @@ export default function DataJemaat() {
               </select>
             </div>
           </div>
+
           <div>
             <label className="block text-sm font-semibold mb-1">Pekerjaan</label>
             <input
@@ -255,6 +328,7 @@ export default function DataJemaat() {
               className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
             />
           </div>
+
           <div>
             <label className="block text-sm font-semibold mb-1">Status Keaktifan</label>
             <select

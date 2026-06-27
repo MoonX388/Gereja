@@ -43,7 +43,7 @@ export default function PelayanGereja() {
       return;
     }
     if (editingId) {
-      updatePelayan(editingId, formData);
+      updatePelayan(Number(editingId), formData);
     } else {
       addPelayan(formData);
     }

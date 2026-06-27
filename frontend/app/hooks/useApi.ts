@@ -12,15 +12,15 @@ export function useApi<T>(url: string) {
     fetch(url)
       .then(res => {
         if (!res.ok) {
-          if (res.status === 403) router.push('/status/403');
-          else if (res.status === 404) router.push('/status/404');
-          else router.push('/status/500');
+          if (res.status === 403) router.push('/error/403');
+          else if (res.status === 404) router.push('/error/404');
+          else router.push('/error/500');
           return null;
         }
         return res.json();
       })
       .then(json => setData(json))
-      .catch(() => router.push('/status/500'))
+      .catch(() => router.push('/error/500'))
       .finally(() => setLoading(false));
   }, [url, router]);
 

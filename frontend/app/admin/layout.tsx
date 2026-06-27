@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import api from '@/lib/api';
 import '../ui/style.css';
 import '../ui/globals.css';
+import { ToastProvider } from '@/app/components/ToastContext';
 import { AdminProvider } from './context/AdminContext';
 import AdminLayout from './components/AdminLayout';
 import Loading from '../components/loading'; // ⬅️ import komponen loading
@@ -52,8 +53,13 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <AdminProvider>
-      <AdminLayout>{children}</AdminLayout>
-    </AdminProvider>
+    <ToastProvider>
+      <AdminProvider>
+        {/* AdminLayout ini yang memunculkan sidebar! */}
+        <AdminLayout>
+          {children}
+        </AdminLayout>
+      </AdminProvider>
+    </ToastProvider>
   );
 }

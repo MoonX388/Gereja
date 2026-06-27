@@ -1,14 +1,20 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+// Import instance axios milikmu. Sesuaikan path-nya jika letak filenya berbeda
+import api from '@/lib/api'; 
 
+// 1. SEMUA INTERFACE DI BAWAH INI SUDAH MENGGUNAKAN id: number
 export interface Jemaat {
-  id: string;
+  id: number;
   nama: string;
   gender: string;
-  baptis: string;
   tempatLahir: string;
   tglLahir: string;
+  tempatBaptis: string;
+  tglBaptis: string;
+  tempatSidi: string;
+  tglSidi: string;
   alamat: string;
   telp: string;
   nikah: string;
@@ -17,7 +23,7 @@ export interface Jemaat {
 }
 
 interface Pelayan {
-  id: string;
+  id: number;
   nama: string;
   jabatan: string;
   departemen: string;
@@ -25,7 +31,7 @@ interface Pelayan {
 }
 
 interface Keuangan {
-  id: string;
+  id: number;
   jenis: 'masuk' | 'keluar';
   kategori: string;
   jumlah: number;
@@ -34,7 +40,7 @@ interface Keuangan {
 }
 
 interface Inventaris {
-  id: string;
+  id: number;
   nama: string;
   kategori: string;
   jumlah: number;
@@ -44,7 +50,7 @@ interface Inventaris {
 }
 
 interface Keluarga {
-  id: string;
+  id: number;
   noKK: string;
   kepala: string;
   alamat: string;
@@ -52,7 +58,7 @@ interface Keluarga {
 }
 
 interface Jadwal {
-  id: string;
+  id: number;
   nama: string;
   tanggal: string;
   waktu: string;
@@ -62,7 +68,7 @@ interface Jadwal {
 }
 
 interface Absensi {
-  id: string;
+  id: number;
   kegiatan: string;
   nama: string;
   status: string;
@@ -70,7 +76,7 @@ interface Absensi {
 }
 
 interface Notifikasi {
-  id: string;
+  id: number;
   judul: string;
   pesan: string;
   target: string;
@@ -111,34 +117,33 @@ interface AdminContextType {
   
   setCurrentPage: (page: string) => void;
   addJemaat: (item: Omit<Jemaat, 'id'>) => void;
-  updateJemaat: (id: string, item: Omit<Jemaat, 'id'>) => void;
-  deleteJemaat: (id: string) => void;
+  updateJemaat: (id: number, item: Omit<Jemaat, 'id'>) => void;
+  deleteJemaat: (id: number) => void; 
   addPelayan: (item: Omit<Pelayan, 'id'>) => void;
-  updatePelayan: (id: string, item: Omit<Pelayan, 'id'>) => void;
-  deletePelayan: (id: string) => void;
+  updatePelayan: (id: number, item: Omit<Pelayan, 'id'>) => void; // Tipe data id diubah ke number
+  deletePelayan: (id: number) => void;                          // Tipe data id diubah ke number
   addKeuangan: (item: Omit<Keuangan, 'id'>) => void;
-  updateKeuangan: (id: string, item: Omit<Keuangan, 'id'>) => void;
-  deleteKeuangan: (id: string) => void;
+  updateKeuangan: (id: number, item: Omit<Keuangan, 'id'>) => void; // Tipe data id diubah ke number
+  deleteKeuangan: (id: number) => void;                          // Tipe data id diubah ke number
   addInventaris: (item: Omit<Inventaris, 'id'>) => void;
-  updateInventaris: (id: string, item: Omit<Inventaris, 'id'>) => void;
-  deleteInventaris: (id: string) => void;
+  updateInventaris: (id: number, item: Omit<Inventaris, 'id'>) => void; // Tipe data id diubah ke number
+  deleteInventaris: (id: number) => void;                          // Tipe data id diubah ke number
   addKeluarga: (item: Omit<Keluarga, 'id'>) => void;
-  updateKeluarga: (id: string, item: Omit<Keluarga, 'id'>) => void;
-  deleteKeluarga: (id: string) => void;
+  updateKeluarga: (id: number, item: Omit<Keluarga, 'id'>) => void; // Tipe data id diubah ke number
+  deleteKeluarga: (id: number) => void;                          // Tipe data id diubah ke number
   addJadwal: (item: Omit<Jadwal, 'id'>) => void;
-  updateJadwal: (id: string, item: Omit<Jadwal, 'id'>) => void;
-  deleteJadwal: (id: string) => void;
+  updateJadwal: (id: number, item: Omit<Jadwal, 'id'>) => void; // Tipe data id diubah ke number
+  deleteJadwal: (id: number) => void;                          // Tipe data id diubah ke number
   addAbsensi: (item: Omit<Absensi, 'id'>) => void;
-  deleteAbsensi: (id: string) => void;
+  deleteAbsensi: (id: number) => void;                          // Tipe data id diubah ke number
   addNotifikasi: (item: Omit<Notifikasi, 'id'>) => void;
-  deleteNotifikasi: (id: string) => void;
+  deleteNotifikasi: (id: number) => void;                          // Tipe data id diubah ke number
   updateSettings: (newSettings: Partial<Settings>) => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  jemaat: 'gd_jemaat',
   pelayan: 'gd_pelayan',
   keuangan: 'gd_keuangan',
   inventaris: 'gd_inventaris',
@@ -168,7 +173,8 @@ const DEFAULT_SETTINGS: Settings = {
   emailFrom: '',
 };
 
-const generateId = () => 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+// 2. FUNGSI GENERATE ID SUDAH DIUBAH AGAR MENGHASILKAN ANGKA (NUMBER)
+const generateId = () => Date.now() + Math.floor(Math.random() * 1000);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [jemaat, setJemaat] = useState<Jemaat[]>([]);
@@ -182,8 +188,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [currentPage, setCurrentPage] = useState('dashboard');
 
-  // Initialize from localStorage
+  // Initialize data
   useEffect(() => {
+    const loadJemaatFromServer = async () => {
+      try {
+        const res = await api.get('/jemaat');
+        setJemaat(res.data);
+      } catch (error) {
+        console.error("Gagal mengambil data jemaat dari API server:", error);
+      }
+    };
+    loadJemaatFromServer();
+
     const getData = (key: string) => {
       try {
         return JSON.parse(localStorage.getItem(key) || '[]');
@@ -192,7 +208,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    setJemaat(getData(STORAGE_KEYS.jemaat));
     setPelayan(getData(STORAGE_KEYS.pelayan));
     setKeuangan(getData(STORAGE_KEYS.keuangan));
     setInventaris(getData(STORAGE_KEYS.inventaris));
@@ -205,32 +220,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (savedSettings) {
       setSettings((prev) => ({ ...prev, ...JSON.parse(savedSettings) }));
     }
-
-    // Seed data if empty
-    seedData();
   }, []);
-
-  const seedData = () => {
-    if (!localStorage.getItem(STORAGE_KEYS.jemaat)) {
-      const seedJemaat: Jemaat[] = [
-        {
-          id: generateId(),
-          nama: 'Yohanes Simanjuntak',
-          gender: 'Pria',
-          baptis: 'Sudah',
-          tempatLahir: 'Medan',
-          tglLahir: '1975-03-15',
-          alamat: 'Jl. Mawar 12',
-          telp: '0812-1111',
-          nikah: 'Menikah',
-          pekerjaan: 'Pendeta',
-          status: 'Aktif',
-        },
-      ];
-      localStorage.setItem(STORAGE_KEYS.jemaat, JSON.stringify(seedJemaat));
-      setJemaat(seedJemaat);
-    }
-  };
 
   const saveData = (key: string, data: any) => {
     localStorage.setItem(key, JSON.stringify(data));
@@ -249,35 +239,49 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     currentPage,
     setCurrentPage,
     
-    addJemaat: (item) => {
-      const newItem = { ...item, id: generateId() };
-      const updated = [newItem, ...jemaat];
-      setJemaat(updated);
-      saveData(STORAGE_KEYS.jemaat, updated);
+    addJemaat: async (item) => {
+      try {
+        const res = await api.post('/jemaat', item);
+        setJemaat((prev) => [res.data, ...prev]);
+      } catch (error) {
+        console.error("Gagal menambahkan jemaat:", error);
+      }
     },
-    updateJemaat: (id, item) => {
-      const updated = jemaat.map((j) => (j.id === id ? { ...item, id } : j));
-      setJemaat(updated);
-      saveData(STORAGE_KEYS.jemaat, updated);
-    },
-    deleteJemaat: (id) => {
-      const updated = jemaat.filter((j) => j.id !== id);
-      setJemaat(updated);
-      saveData(STORAGE_KEYS.jemaat, updated);
+    updateJemaat: async (id, item) => {
+  try {
+    // 1. Tetap tembak API backend agar data di database ter-update
+    await api.put(`/jemaat/${id}`, item);
+    
+    // 2. Karena backend hanya mengembalikan pesan teks, kita gabung manual ID dan data barunya di sini
+    setJemaat((prev) => 
+      prev.map((j) => (j.id === id ? { ...item, id } : j))
+    );
+  } catch (error) {
+    console.error("Gagal memperbarui jemaat:", error);
+  }
+},
+    deleteJemaat: async (id) => {
+      try {
+        await api.delete(`/jemaat/${id}`);
+        setJemaat((prev) => prev.filter((j) => j.id !== id));
+      } catch (error) {
+        console.error("Gagal menghapus jemaat:", error);
+      }
     },
 
+    // 3. SEMUA PARAMETER ID DI BAWAH INI SEKARANG SUDAH MENGGUNAKAN id: number
     addPelayan: (item) => {
       const newItem = { ...item, id: generateId() };
       const updated = [newItem, ...pelayan];
       setPelayan(updated);
       saveData(STORAGE_KEYS.pelayan, updated);
     },
-    updatePelayan: (id, item) => {
+    updatePelayan: (id: number, item) => {
       const updated = pelayan.map((p) => (p.id === id ? { ...item, id } : p));
       setPelayan(updated);
       saveData(STORAGE_KEYS.pelayan, updated);
     },
-    deletePelayan: (id) => {
+    deletePelayan: (id: number) => {
       const updated = pelayan.filter((p) => p.id !== id);
       setPelayan(updated);
       saveData(STORAGE_KEYS.pelayan, updated);
@@ -289,12 +293,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setKeuangan(updated);
       saveData(STORAGE_KEYS.keuangan, updated);
     },
-    updateKeuangan: (id, item) => {
+    updateKeuangan: (id: number, item) => {
       const updated = keuangan.map((k) => (k.id === id ? { ...item, id } : k));
       setKeuangan(updated);
       saveData(STORAGE_KEYS.keuangan, updated);
     },
-    deleteKeuangan: (id) => {
+    deleteKeuangan: (id: number) => {
       const updated = keuangan.filter((k) => k.id !== id);
       setKeuangan(updated);
       saveData(STORAGE_KEYS.keuangan, updated);
@@ -306,12 +310,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setInventaris(updated);
       saveData(STORAGE_KEYS.inventaris, updated);
     },
-    updateInventaris: (id, item) => {
+    updateInventaris: (id: number, item) => {
       const updated = inventaris.map((inv) => (inv.id === id ? { ...item, id } : inv));
       setInventaris(updated);
       saveData(STORAGE_KEYS.inventaris, updated);
     },
-    deleteInventaris: (id) => {
+    deleteInventaris: (id: number) => {
       const updated = inventaris.filter((inv) => inv.id !== id);
       setInventaris(updated);
       saveData(STORAGE_KEYS.inventaris, updated);
@@ -323,12 +327,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setKeluarga(updated);
       saveData(STORAGE_KEYS.keluarga, updated);
     },
-    updateKeluarga: (id, item) => {
+    updateKeluarga: (id: number, item) => {
       const updated = keluarga.map((k) => (k.id === id ? { ...item, id } : k));
       setKeluarga(updated);
       saveData(STORAGE_KEYS.keluarga, updated);
     },
-    deleteKeluarga: (id) => {
+    deleteKeluarga: (id: number) => {
       const updated = keluarga.filter((k) => k.id !== id);
       setKeluarga(updated);
       saveData(STORAGE_KEYS.keluarga, updated);
@@ -342,14 +346,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setJadwal(updated);
       saveData(STORAGE_KEYS.jadwal, updated);
     },
-    updateJadwal: (id, item) => {
+    updateJadwal: (id: number, item) => {
       const updated = jadwal
         .map((j) => (j.id === id ? { ...item, id } : j))
         .sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
       setJadwal(updated);
       saveData(STORAGE_KEYS.jadwal, updated);
     },
-    deleteJadwal: (id) => {
+    deleteJadwal: (id: number) => {
       const updated = jadwal.filter((j) => j.id !== id);
       setJadwal(updated);
       saveData(STORAGE_KEYS.jadwal, updated);
@@ -361,7 +365,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setAbsensi(updated);
       saveData(STORAGE_KEYS.absensi, updated);
     },
-    deleteAbsensi: (id) => {
+    deleteAbsensi: (id: number) => {
       const updated = absensi.filter((a) => a.id !== id);
       setAbsensi(updated);
       saveData(STORAGE_KEYS.absensi, updated);
@@ -373,7 +377,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       setNotifikasi(updated);
       saveData(STORAGE_KEYS.notifikasi, updated);
     },
-    deleteNotifikasi: (id) => {
+    deleteNotifikasi: (id: number) => {
       const updated = notifikasi.filter((n) => n.id !== id);
       setNotifikasi(updated);
       saveData(STORAGE_KEYS.notifikasi, updated);
