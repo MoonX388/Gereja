@@ -6,7 +6,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { currentPage, setCurrentPage } = useAdmin();
+  const { currentPage } = useAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

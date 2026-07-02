@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
+import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
 
 export default function Notifikasi() {
+  const { showToast } = useToast();
   const { notifikasi, addNotifikasi, deleteNotifikasi } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,11 +24,11 @@ export default function Notifikasi() {
 
   const handleSave = () => {
     if (!formData.judul.trim()) {
-      alert('Judul wajib');
+      showToast('Judul wajib diisi', 'error');
       return;
     }
     addNotifikasi(formData);
-    alert('Notifikasi terkirim (simulasi)');
+    showToast('Notifikasi terkirim (simulasi)', 'success');
     setIsModalOpen(false);
   };
 
@@ -68,8 +70,11 @@ export default function Notifikasi() {
                     <td>{item.via}</td>
                     <td className="text-center space-x-2">
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deleteNotifikasi(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deleteNotifikasi(item.id);
+                            showToast('Notifikasi berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

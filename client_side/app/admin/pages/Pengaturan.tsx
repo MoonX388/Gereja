@@ -26,10 +26,6 @@ export default function Pengaturan() {
   const [loginMethod, setLoginMethod] = useState<"pairing" | "qr">("pairing");
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLocalSettings(settings);
-  }, [settings]);
-
   // Ambil token WA
   useEffect(() => {
     if (activeTab === "integrasi") {
@@ -94,7 +90,7 @@ export default function Pengaturan() {
 
   const handleUpdateAccount = async () => {
     try {
-      const payload: any = { username: localSettings.username };
+      const payload: Record<string, string> = { username: localSettings.username };
       if (newPassword.trim()) {
         payload.password = newPassword;
       }
@@ -106,15 +102,16 @@ export default function Pengaturan() {
       showToast('Akun berhasil diperbarui!', 'success');
       setNewPassword('');
       await api.get('/auth/profile');
-    } catch (error: any) {
-      showToast(error.response?.data?.message || 'Gagal update akun', 'error');
+    } catch (error: unknown) {
+      const typedError = error as { response?: { data?: { message?: string } } };
+      showToast(typedError.response?.data?.message || 'Gagal update akun', 'error');
     }
   };
 
   const handleLogout = () => {
     if (window.confirm("Apakah Anda yakin ingin keluar?")) {
       localStorage.removeItem("token");
-      router.push("/auth/login");
+      router.push("/login");
     }
   };
 
@@ -137,12 +134,6 @@ export default function Pengaturan() {
       console.error("Error Pairing:", error);
       setBotStatus("❌ Gagal mendapatkan kode pairing. Sesi mungkin error.");
     }
-  };
-
-  const copyToken = () => {
-    if (!waToken) return;
-    navigator.clipboard.writeText(waToken);
-    showToast("Token berhasil disalin!", "success");
   };
 
   return (

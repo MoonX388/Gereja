@@ -1,7 +1,7 @@
 'use client';
 
 import { useAdmin } from '../context/AdminContext';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 // 1. Import komponen Chart.js dan React Chart.js
 import {
@@ -23,15 +23,10 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { jemaat, pelayan, jadwal, inventaris, keuangan } = useAdmin();
-  const [saldo, setSaldo] = useState(0);
-
-  useEffect(() => {
-    let total = 0;
-    keuangan.forEach((item) => {
-      total += item.jenis === 'masuk' ? item.jumlah : -item.jumlah;
-    });
-    setSaldo(total);
-  }, [keuangan]);
+  const saldo = useMemo(
+    () => keuangan.reduce((total, item) => total + (item.jenis === 'masuk' ? item.jumlah : -item.jumlah), 0),
+    [keuangan]
+  );
 
   const stats = [
     { label: 'Jemaat', value: jemaat.length, icon: 'fa-users', color: 'bg-blue-100 text-blue-700' },

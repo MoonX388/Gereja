@@ -105,6 +105,18 @@ export interface Settings {
   emailFrom: string;
 }
 
+export interface AdminBackupData {
+  jemaat: Jemaat[];
+  pelayan: Pelayan[];
+  keuangan: Keuangan[];
+  inventaris: Inventaris[];
+  keluarga: Keluarga[];
+  jadwal: Jadwal[];
+  absensi: Absensi[];
+  notifikasi: Notifikasi[];
+  settings: Settings;
+}
+
 // ============================================================
 // 2. CONTEXT TYPE
 // ============================================================
@@ -165,6 +177,7 @@ interface AdminContextType {
 
   // Settings (localStorage)
   updateSettings: (newSettings: Partial<Settings>) => void;
+  importData: (data: Partial<AdminBackupData>) => void;
 }
 
 // ============================================================
@@ -203,15 +216,27 @@ const generateId = () => Date.now() + Math.floor(Math.random() * 1000);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   // -------------------- STATE --------------------
+  const getLocalAbsensi = (): Absensi[] => {
+    if (typeof window === 'undefined') return [];
+    const saved = localStorage.getItem('gd_absensi');
+    return saved ? JSON.parse(saved) : [];
+  };
+
+  const getLocalSettings = (): Settings => {
+    if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+    const saved = localStorage.getItem(STORAGE_KEYS.settings);
+    return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+  };
+
   const [jemaat, setJemaat] = useState<Jemaat[]>([]);
   const [pelayan, setPelayan] = useState<Pelayan[]>([]);
   const [keuangan, setKeuangan] = useState<Keuangan[]>([]);
   const [inventaris, setInventaris] = useState<Inventaris[]>([]);
   const [keluarga, setKeluarga] = useState<Keluarga[]>([]);
   const [jadwal, setJadwal] = useState<Jadwal[]>([]);
-  const [absensi, setAbsensi] = useState<Absensi[]>([]);
+  const [absensi, setAbsensi] = useState<Absensi[]>(() => getLocalAbsensi());
   const [notifikasi, setNotifikasi] = useState<Notifikasi[]>([]);
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<Settings>(() => getLocalSettings());
   const [currentPage, setCurrentPage] = useState('dashboard');
 
   // -------------------- FUNGSI LOAD DATA DARI API --------------------
@@ -239,19 +264,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     loadData('/jadwal', setJadwal);
     loadData('/notifikasi', setNotifikasi);
 
-    // Absensi masih dari localStorage (karena belum ada endpoint)
-    const savedAbsensi = localStorage.getItem('gd_absensi');
-    if (savedAbsensi) setAbsensi(JSON.parse(savedAbsensi));
-
-    // Settings dari localStorage
-    const savedSettings = localStorage.getItem(STORAGE_KEYS.settings);
-    if (savedSettings) {
-      setSettings((prev) => ({ ...prev, ...JSON.parse(savedSettings) }));
-    }
+    // Absensi dan settings sudah diinisialisasi dari localStorage di state awal.
   }, []);
 
   // Helper untuk menyimpan ke localStorage (hanya untuk absensi & settings)
-  const saveToLocal = (key: string, data: any) => {
+  const saveToLocal = (key: string, data: unknown) => {
     localStorage.setItem(key, JSON.stringify(data));
   };
 
@@ -457,6 +474,25 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     saveToLocal(STORAGE_KEYS.settings, updated);
   };
 
+  const importData = (data: Partial<AdminBackupData>) => {
+    if (Array.isArray(data.jemaat)) setJemaat(data.jemaat);
+    if (Array.isArray(data.pelayan)) setPelayan(data.pelayan);
+    if (Array.isArray(data.keuangan)) setKeuangan(data.keuangan);
+    if (Array.isArray(data.inventaris)) setInventaris(data.inventaris);
+    if (Array.isArray(data.keluarga)) setKeluarga(data.keluarga);
+    if (Array.isArray(data.jadwal)) setJadwal(data.jadwal);
+    if (Array.isArray(data.absensi)) {
+      setAbsensi(data.absensi);
+      saveToLocal('gd_absensi', data.absensi);
+    }
+    if (Array.isArray(data.notifikasi)) setNotifikasi(data.notifikasi);
+    if (data.settings) {
+      const updatedSettings = { ...DEFAULT_SETTINGS, ...data.settings };
+      setSettings(updatedSettings);
+      saveToLocal(STORAGE_KEYS.settings, updatedSettings);
+    }
+  };
+
   // ============================================================
   // 5. CONTEXT VALUE
   // ============================================================
@@ -496,6 +532,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     addNotifikasi,
     deleteNotifikasi,
     updateSettings,
+    importData,
   };
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

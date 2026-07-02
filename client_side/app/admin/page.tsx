@@ -8,7 +8,6 @@ import PelayanGereja from './pages/PelayanGereja';
 import Keuangan from './pages/Keuangan';
 import Inventaris from './pages/Inventaris';
 import Jadwal from './pages/Jadwal';
-import Absensi from './pages/Absensi';
 import Notifikasi from './pages/Notifikasi';
 import Dokumen from './pages/Dokumen';
 import Pengaturan from './pages/Pengaturan';

@@ -11,7 +11,7 @@ export async function fetchDataOrRedirect<T>(
     if (!res.ok) {
       if (res.status === 403) redirect('/status/403');
       if (res.status === 404) redirect('/status/404');
-      redirect('/status/500');
+      redirect(`/status/${errorCode}`);
     }
     return await res.json();
   } catch (error) {

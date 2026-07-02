@@ -33,13 +33,13 @@ export class TokenService implements OnModuleInit {
 
   private async generateNewToken(): Promise<string> {
     const newToken = crypto.randomBytes(16).toString('hex');
-    
+
     const tokenEntity = this.tokenRepo.create({
       token: newToken,
       isActive: true,
     });
     await this.tokenRepo.save(tokenEntity);
-    
+
     // LOG DIHAPUS AGAR TOKEN TIDAK BOCOR DI TERMINAL
     return newToken;
   }

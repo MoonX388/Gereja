@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdmin } from '../context/AdminContext';
+import { useAdmin, Pelayan as PelayanType } from '../context/AdminContext';
+import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
 
 const JABATAN_ORDER = {
@@ -11,9 +12,10 @@ const JABATAN_ORDER = {
 };
 
 export default function PelayanGereja() {
+  const { showToast } = useToast();
   const { pelayan, jemaat, addPelayan, updatePelayan, deletePelayan } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     nama: '',
     jabatan: 'Pendeta',
@@ -26,7 +28,7 @@ export default function PelayanGereja() {
     (JABATAN_ORDER[b.jabatan as keyof typeof JABATAN_ORDER] || 99)
   );
 
-  const handleOpenModal = (item?: any) => {
+  const handleOpenModal = (item?: PelayanType) => {
     if (item) {
       setEditingId(item.id);
       setFormData({ nama: item.nama, jabatan: item.jabatan, departemen: item.departemen, status: item.status });
@@ -39,13 +41,15 @@ export default function PelayanGereja() {
 
   const handleSave = () => {
     if (!formData.nama) {
-      alert('Nama wajib dipilih');
+      showToast('Nama wajib dipilih', 'error');
       return;
     }
-    if (editingId) {
-      updatePelayan(Number(editingId), formData);
+    if (editingId !== null) {
+      updatePelayan(editingId, formData);
+      showToast('Data pelayan berhasil diperbarui!', 'success');
     } else {
       addPelayan(formData);
+      showToast('Pelayan baru berhasil ditambahkan!', 'success');
     }
     setIsModalOpen(false);
   };
@@ -92,8 +96,11 @@ export default function PelayanGereja() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deletePelayan(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deletePelayan(item.id);
+                            showToast('Pelayan berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

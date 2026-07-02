@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../../entity/user.entity';
+import { User } from '../../entity/data.entity';
 
 @Injectable()
 export class AiService {
@@ -18,9 +18,13 @@ export class AiService {
     if (!this.generator) {
       console.log('⏳ Memuat Model AI...');
       const { pipeline } = await import('@xenova/transformers');
-      const modelName = this.configService.get<string>('AI_MODEL') || 'Xenova/Qwen1.5-0.5B-Chat';
+      const modelName =
+        this.configService.get<string>('AI_MODEL') ||
+        'Xenova/Qwen1.5-0.5B-Chat';
       const quantized = this.configService.get<boolean>('AI_QUANTIZED') ?? true;
-      this.generator = await pipeline('text-generation', modelName, { quantized });
+      this.generator = await pipeline('text-generation', modelName, {
+        quantized,
+      });
       console.log('✅ Model AI siap');
     }
 
@@ -38,7 +42,7 @@ export class AiService {
     const chatPrompt = `Instruksi: Kamu adalah AI asisten WhatsApp Gereja yang ramah, sopan, dan menjawab singkat.\n\nData Pengirim:\n${infoUser}\n\nUser: ${prompt}\n\n${pembatas}\n`;
 
     const result = await this.generator(chatPrompt, {
-      max_new_tokens: 40, 
+      max_new_tokens: 40,
       temperature: 0.4,
       do_sample: true,
       repetition_penalty: 1.2,

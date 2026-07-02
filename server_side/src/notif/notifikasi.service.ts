@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notifikasi } from '../entity/notifikasi.entity';
-import { User } from '../entity/user.entity';
+import { User } from '../entity/data.entity';
 import { BotService } from '../bot/bot.service';
 
 @Injectable()
@@ -51,9 +51,15 @@ export class NotifikasiService {
     if (target === 'Semua Jemaat') {
       users = await this.userRepo.find({ select: { telepon: true } });
     } else if (target === 'Pelayan') {
-      users = await this.userRepo.find({ where: { role: 'pelayan' }, select: { telepon: true } });
+      users = await this.userRepo.find({
+        where: { role: 'pelayan' },
+        select: { telepon: true },
+      });
     } else if (target === 'Jemaat Aktif') {
-      users = await this.userRepo.find({ where: { status: 'Aktif' }, select: { telepon: true } });
+      users = await this.userRepo.find({
+        where: { status: 'Aktif' },
+        select: { telepon: true },
+      });
     }
 
     // Filter nomor HP yang valid
@@ -70,7 +76,9 @@ export class NotifikasiService {
 
     try {
       await this.botService.sendBroadcast(phoneNumbers, fullMessage);
-      console.log(`✅ Broadcast berhasil dikirim ke ${phoneNumbers.length} penerima.`);
+      console.log(
+        `✅ Broadcast berhasil dikirim ke ${phoneNumbers.length} penerima.`,
+      );
     } catch (error) {
       console.error('❌ Gagal mengirim broadcast:', error);
     }

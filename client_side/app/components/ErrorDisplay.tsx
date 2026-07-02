@@ -1,6 +1,9 @@
 'use client';
 
+'use client';
+
 import React from 'react';
+import Link from 'next/link';
 import { IconType } from 'react-icons';
 import {
   FaCircleCheck,
@@ -26,6 +29,8 @@ interface ErrorData {
   title: string;
   desc: string;
 }
+
+const version = process.env.NEXT_PUBLIC_APP_VERSION || 'v1.0';
 
 const errorMap: Record<number, ErrorData> = {
   200: { icon: FaCircleCheck, badge: 'OK', title: 'Permintaan Berhasil', desc: 'Server telah memproses permintaan Anda dengan sukses.' },
@@ -108,7 +113,7 @@ export default function ErrorDisplay({
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">{description || data.desc}</p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <a
+          <Link
             href="/"
             className="inline-flex items-center gap-2 bg-primary hover:bg-secondary text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 hover:scale-105"
           >
@@ -116,7 +121,7 @@ export default function ErrorDisplay({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Kembali ke Beranda
-          </a>
+          </Link>
           <button
             onClick={() => window.history.back()}
             className="border-2 border-gray-300 text-gray-700 px-5 py-2 rounded-full font-semibold hover:bg-gray-50 transition text-sm flex items-center gap-1"
@@ -154,7 +159,7 @@ export default function ErrorDisplay({
             GerejaDigital
           </span>
           <span>|</span>
-          <span>v1.0</span>
+          <span>{version}</span>
         </div>
       </div>
     </div>

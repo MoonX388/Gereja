@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
+import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
 
 export default function Absensi() {
+  const { showToast } = useToast();
   const { absensi, jadwal, jemaat, addAbsensi, deleteAbsensi } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,10 +28,11 @@ export default function Absensi() {
 
   const handleSave = () => {
     if (!formData.kegiatan || !formData.nama) {
-      alert('Lengkapi data');
+      showToast('Lengkapi data absensi', 'error');
       return;
     }
     addAbsensi(formData);
+    showToast('Absensi berhasil dicatat!', 'success');
     setIsModalOpen(false);
   };
 
@@ -82,8 +85,11 @@ export default function Absensi() {
                     </td>
                     <td className="text-center space-x-2">
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deleteAbsensi(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deleteAbsensi(item.id);
+                            showToast('Catatan absensi berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

@@ -37,7 +37,9 @@ export class BotService implements OnModuleInit {
   ) {
     // Ambil dari .env dengan default fallback
     this.prefix = this.configService.get<string>('BOT_PREFIX') || '!';
-    const adminPhone = this.configService.get<string>('BOT_ADMIN_PHONE') || '6282158024074@s.whatsapp.net';
+    const adminPhone =
+      this.configService.get<string>('BOT_ADMIN_PHONE') ||
+      '6282158024074@s.whatsapp.net';
     this.adminBot = [adminPhone];
   }
 
@@ -63,14 +65,14 @@ export class BotService implements OnModuleInit {
 
     this.sock.ev.on('connection.update', (update: any) => {
       const { connection, lastDisconnect, qr } = update;
-      
+
       if (qr) {
         this.currentQrString = qr;
       }
 
       if (connection === 'close') {
         this.currentQrString = null;
-        
+
         const statusCode = new Boom(lastDisconnect?.error)?.output?.statusCode;
         const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
@@ -82,7 +84,7 @@ export class BotService implements OnModuleInit {
           if (fs.existsSync('./Bot Session')) {
             fs.rmSync('./Bot Session', { recursive: true, force: true });
           }
-          this.startBot(); 
+          this.startBot();
         }
       } else if (connection === 'open') {
         this.currentQrString = null;
@@ -93,7 +95,8 @@ export class BotService implements OnModuleInit {
       const msg = m.messages[0];
       if (!msg.message) return;
 
-      const body = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+      const body =
+        msg.message.conversation || msg.message.extendedTextMessage?.text || '';
       const remoteJid = msg.key.remoteJid;
       const isGroup = remoteJid.endsWith('@g.us');
       const userId = isGroup ? msg.key.participant : remoteJid;
@@ -105,7 +108,8 @@ export class BotService implements OnModuleInit {
       const command = args.shift()?.toLowerCase();
       const query = args.join(' ');
 
-      const reply = (teks: string) => this.sock.sendMessage(remoteJid, { text: teks }, { quoted: msg });
+      const reply = (teks: string) =>
+        this.sock.sendMessage(remoteJid, { text: teks }, { quoted: msg });
 
       switch (command) {
         case 'menu':
@@ -143,27 +147,32 @@ export class BotService implements OnModuleInit {
     return `*🤖 Bot Gereja - Menu*\n\n*!menu* - Tampilkan menu ini\n*!ai* <pertanyaan> - Tanya jawab AI\n\n*Powered by NestJS + Baileys*`;
   }
 
-  async sendMessageToContact(phoneNumber: string, message: string): Promise<void> {
-  if (!this.sock) throw new Error('Bot WhatsApp belum terhubung');
-  const jid = phoneNumber.includes('@s.whatsapp.net') ? phoneNumber : `${phoneNumber}@s.whatsapp.net`;
-  await this.sock.sendMessage(jid, { text: message });
-}
-
-async sendBroadcast(phoneNumbers: string[], message: string): Promise<void> {
-  if (!this.sock) {
-    console.error('Bot WhatsApp belum terhubung.');
-    return;
+  async sendMessageToContact(
+    phoneNumber: string,
+    message: string,
+  ): Promise<void> {
+    if (!this.sock) throw new Error('Bot WhatsApp belum terhubung');
+    const jid = phoneNumber.includes('@s.whatsapp.net')
+      ? phoneNumber
+      : `${phoneNumber}@s.whatsapp.net`;
+    await this.sock.sendMessage(jid, { text: message });
   }
 
-  for (const number of phoneNumbers) {
-    try {
-      // Format nomor: pastikan ada @s.whatsapp.net
-      const jid = number.includes('@') ? number : `${number}@s.whatsapp.net`;
-      await this.sock.sendMessage(jid, { text: message });
-      console.log(`Pesan terkirim ke ${number}`);
-    } catch (err) {
-      console.error(`Gagal kirim ke ${number}:`, err);
+  async sendBroadcast(phoneNumbers: string[], message: string): Promise<void> {
+    if (!this.sock) {
+      console.error('Bot WhatsApp belum terhubung.');
+      return;
+    }
+
+    for (const number of phoneNumbers) {
+      try {
+        // Format nomor: pastikan ada @s.whatsapp.net
+        const jid = number.includes('@') ? number : `${number}@s.whatsapp.net`;
+        await this.sock.sendMessage(jid, { text: message });
+        console.log(`Pesan terkirim ke ${number}`);
+      } catch (err) {
+        console.error(`Gagal kirim ke ${number}:`, err);
+      }
     }
   }
-}
 }

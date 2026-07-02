@@ -1,9 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { JemaatService } from './jemaat.service';
-import { User as Jemaat } from '../entity/user.entity';
+import { User as Jemaat } from '../entity/data.entity';
 import { AdminGuard } from '../auth/admin.guard';
 import { AuthGuard } from '@nestjs/passport';
-
 
 @Controller('jemaat')
 @UseGuards(AuthGuard('jwt'), AdminGuard)
@@ -21,7 +29,7 @@ export class JemaatController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() data: any) { 
+  async update(@Param('id') id: string, @Body() data: any) {
     // Hapus ": Promise<User>" dari baris ini jika sebelumnya ada
     await this.jemaatService.update(Number(id), data);
     return { message: 'Data jemaat berhasil diperbarui' };

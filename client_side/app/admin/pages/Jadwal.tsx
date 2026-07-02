@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdmin } from '../context/AdminContext';
+import { useAdmin, Jadwal as JadwalType } from '../context/AdminContext';
+import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
 
 export default function Jadwal() {
+  const { showToast } = useToast();
   const { jadwal, pelayan, addJadwal, updateJadwal, deleteJadwal } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     nama: '',
     tanggal: '',
@@ -17,7 +19,7 @@ export default function Jadwal() {
     status: 'Terjadwal',
   });
 
-  const handleOpenModal = (item?: any) => {
+  const handleOpenModal = (item?: JadwalType) => {
     if (item) {
       setEditingId(item.id);
       setFormData(item);
@@ -30,13 +32,15 @@ export default function Jadwal() {
 
   const handleSave = () => {
     if (!formData.nama.trim() || !formData.tanggal) {
-      alert('Nama dan tanggal wajib');
+      showToast('Nama dan tanggal wajib diisi', 'error');
       return;
     }
-    if (editingId) {
-      updateJadwal(Number(editingId), formData);
+    if (editingId !== null) {
+      updateJadwal(editingId, formData);
+      showToast('Jadwal berhasil diperbarui!', 'success');
     } else {
       addJadwal(formData);
+      showToast('Jadwal baru berhasil ditambahkan!', 'success');
     }
     setIsModalOpen(false);
   };
@@ -102,8 +106,11 @@ export default function Jadwal() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deleteJadwal(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deleteJadwal(item.id);
+                            showToast('Jadwal berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

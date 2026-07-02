@@ -4,26 +4,27 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/app/components/ToastContext";
 import "@/app/ui/auth.css";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMsg("");
     try {
       await login(identifier, password);
       router.push("/admin");
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || "Login gagal, periksa akun Anda.");
+    } catch (error: unknown) {
+      const typedError = error as { response?: { data?: { message?: string } } };
+      showToast(typedError.response?.data?.message ?? 'Login gagal, periksa akun Anda.', 'error');
       setLoading(false);
     }
   };
@@ -39,15 +40,6 @@ export default function LoginPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="toast-container fixed top-4 right-4 z-50" id="toastContainer">
-        {errorMsg ? (
-          <div className="toast-item toast-error">
-            <i className="fa-solid fa-circle-exclamation toast-icon"></i>
-            <div className="toast-message">{errorMsg}</div>
-          </div>
-        ) : null}
-      </div>
-
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 w-full max-w-md login-card page-transition">
         <div className="text-center pt-5 pb-2">
           <i className="fa-solid fa-church text-4xl text-primary mb-1"></i>
@@ -60,7 +52,7 @@ export default function LoginPage() {
             <i className="fa-solid fa-key mr-1"></i> Masuk Admin
           </button>
           <Link
-            href="/auth/register"
+            href="/register"
             className="tab-btn w-1/2 py-2 text-center font-semibold text-sm block text-gray-500 hover:bg-gray-50"
           >
             <i className="fa-solid fa-user-plus mr-1"></i> Daftar Anggota

@@ -11,9 +11,10 @@ export default function DataJemaat() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
-  // Update formData state untuk mendukung Tempat & Tanggal Baptis serta Sidi
-  const [formData, setFormData] = useState<any>({
+
+  type JemaatForm = Omit<Jemaat, 'id'>;
+
+  const [formData, setFormData] = useState<JemaatForm>({
     nama: '',
     gender: 'Pria',
     tempatLahir: '',
@@ -35,23 +36,23 @@ export default function DataJemaat() {
       j.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleOpenModal = (item?: any) => {
+  const handleOpenModal = (item?: Jemaat) => {
     if (item) {
       setEditingId(item.id);
       setFormData({
-        nama: item.nama || '',
-        gender: item.gender || 'Pria',
-        tempatLahir: item.tempatLahir || '',
-        tglLahir: item.tglLahir || '',
-        tempatBaptis: item.tempatBaptis || '',
-        tglBaptis: item.tglBaptis || '',
-        tempatSidi: item.tempatSidi || '',
-        tglSidi: item.tglSidi || '',
-        alamat: item.alamat || '',
-        telepon: item.telepon || '',
-        nikah: item.nikah || 'Belum Menikah',
-        pekerjaan: item.pekerjaan || '',
-        status: item.status || 'Aktif',
+        nama: item.nama,
+        gender: item.gender,
+        tempatLahir: item.tempatLahir,
+        tglLahir: item.tglLahir,
+        tempatBaptis: item.tempatBaptis,
+        tglBaptis: item.tglBaptis,
+        tempatSidi: item.tempatSidi,
+        tglSidi: item.tglSidi,
+        alamat: item.alamat,
+        telepon: item.telepon,
+        nikah: item.nikah,
+        pekerjaan: item.pekerjaan,
+        status: item.status,
       });
     } else {
       setEditingId(null);
@@ -76,19 +77,18 @@ export default function DataJemaat() {
 
   const handleSave = () => {
     if (!formData.nama.trim()) {
-      // Panggil notifikasi error
-      showToast('Nama wajib diisi!', 'error'); 
+      showToast('Nama wajib diisi!', 'error');
       return;
     }
-    
-    if (editingId) {
-  updateJemaat(Number(editingId), formData); // Pastikan dibungkus Number() agar aman
-  showToast('Data jemaat berhasil diperbarui!', 'success');
-} else {
+
+    if (editingId !== null) {
+      updateJemaat(editingId, formData);
+      showToast('Data jemaat berhasil diperbarui!', 'success');
+    } else {
       addJemaat(formData);
       showToast('Jemaat baru berhasil ditambahkan!', 'success');
     }
-    
+
     setIsModalOpen(false);
   };
 
@@ -134,7 +134,7 @@ export default function DataJemaat() {
                 </tr>
               </thead>
               <tbody>
-                {filteredJemaat.map((item: any) => (
+                {filteredJemaat.map((item: Jemaat) => (
                   <tr key={item.id}>
                     <td className="font-semibold">{item.nama}</td>
                     <td>{item.gender}</td>
@@ -160,8 +160,11 @@ export default function DataJemaat() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deleteJemaat(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deleteJemaat(item.id);
+                            showToast('Data jemaat berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

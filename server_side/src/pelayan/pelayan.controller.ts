@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { PelayanService } from './pelayan.service';
 import { Pelayan } from '../entity/pelayan.entity';
 import { AdminGuard } from '../auth/admin.guard';

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useAdmin } from '../context/AdminContext';
 
 export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -28,7 +27,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
     >
       <div className="p-5 border-b border-white/10 text-center flex-shrink-0">
         <i className="fa-solid fa-church text-4xl mb-1 text-[#e8c547]"></i>
-        <h2 className="text-lg font-bold tracking-wide">GerejaDigital</h2>
+        <h2 className="text-lg font-bold tracking-wide">Gereja Pintar</h2>
         <p className="text-xs opacity-70">{settings.namaGereja}</p>
       </div>
 

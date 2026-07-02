@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdmin } from '../context/AdminContext';
+import { useAdmin, Keluarga as KeluargaType } from '../context/AdminContext';
+import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
 
 export default function KartuKeluarga() {
+  const { showToast } = useToast();
   const { keluarga, jemaat, addKeluarga, updateKeluarga, deleteKeluarga } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -15,7 +17,7 @@ export default function KartuKeluarga() {
     jumlah: 1,
   });
 
-  const handleOpenModal = (item?: any) => {
+  const handleOpenModal = (item?: KeluargaType) => {
     if (item) {
       setEditingId(item.id);
       setFormData({ noKK: item.noKK, kepala: item.kepala, alamat: item.alamat, jumlah: item.jumlah });
@@ -28,13 +30,15 @@ export default function KartuKeluarga() {
 
   const handleSave = () => {
     if (!formData.noKK.trim()) {
-      alert('No. KK wajib diisi');
+      showToast('No. KK wajib diisi', 'error');
       return;
     }
-    if (editingId) {
+    if (editingId !== null) {
       updateKeluarga(editingId, formData);
+      showToast('Kartu keluarga berhasil diperbarui!', 'success');
     } else {
       addKeluarga(formData);
+      showToast('Kartu keluarga berhasil ditambahkan!', 'success');
     }
     setIsModalOpen(false);
   };
@@ -81,8 +85,11 @@ export default function KartuKeluarga() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deleteKeluarga(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deleteKeluarga(item.id);
+                            showToast('Kartu keluarga berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

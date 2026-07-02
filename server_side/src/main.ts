@@ -6,7 +6,7 @@ import { ClassSerializerInterceptor } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  
+
   // ClassSerializerInterceptor butuh Reflector
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 

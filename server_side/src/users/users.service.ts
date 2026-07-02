@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../entity/user.entity';
+import { User } from '../entity/data.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class UsersService {
     if (!userData.email) {
       // Buat email otomatis unik berdasarkan nama & timestamp jika jemaat biasa tidak punya akun
       userData.email = `jemaat_${Date.now()}@gereja.local`;
-      userData.password = 'password_default_123'; 
+      userData.password = 'password_default_123';
     }
     const user = this.usersRepository.create(userData);
     return this.usersRepository.save(user);
@@ -30,11 +30,11 @@ export class UsersService {
 
   // 3. Update User / Ganti Jabatan (Role)
   async update(id: number, userData: Partial<User>): Promise<void> {
-  // Jika ada password, hash dulu
-  if (userData.password) {
-    userData.password = await bcrypt.hash(userData.password, 10);
-  }
-  await this.usersRepository.update(id, userData);
+    // Jika ada password, hash dulu
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 10);
+    }
+    await this.usersRepository.update(id, userData);
   }
 
   // 4. Hapus User

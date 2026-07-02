@@ -1,13 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdmin } from '../context/AdminContext';
+import { useAdmin, Inventaris as InventarisType } from '../context/AdminContext';
+import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
 
 export default function Inventaris() {
+  const { showToast } = useToast();
   const { inventaris, addInventaris, updateInventaris, deleteInventaris } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     nama: '',
     kategori: 'Peralatan Ibadah',
@@ -17,7 +19,7 @@ export default function Inventaris() {
     kondisi: 'Baik',
   });
 
-  const handleOpenModal = (item?: any) => {
+  const handleOpenModal = (item?: InventarisType) => {
     if (item) {
       setEditingId(item.id);
       setFormData(item);
@@ -37,13 +39,15 @@ export default function Inventaris() {
 
   const handleSave = () => {
     if (!formData.nama.trim()) {
-      alert('Nama wajib diisi');
+      showToast('Nama wajib diisi', 'error');
       return;
     }
-    if (editingId) {
-      updateInventaris(Number(editingId), formData);
+    if (editingId !== null) {
+      updateInventaris(editingId, formData);
+      showToast('Inventaris berhasil diperbarui!', 'success');
     } else {
       addInventaris(formData);
+      showToast('Inventaris baru berhasil ditambahkan!', 'success');
     }
     setIsModalOpen(false);
   };
@@ -100,8 +104,11 @@ export default function Inventaris() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deleteInventaris(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deleteInventaris(item.id);
+                            showToast('Inventaris berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

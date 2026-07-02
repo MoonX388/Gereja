@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAdmin } from '../context/AdminContext';
+import { useMemo, useState } from 'react';
+import { useAdmin, Keuangan as KeuanganType } from '../context/AdminContext';
+import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
 
 export default function Keuangan() {
+  const { showToast } = useToast();
   const { keuangan, addKeuangan, updateKeuangan, deleteKeuangan } = useAdmin();
   const [filter, setFilter] = useState('semua');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [stats, setStats] = useState({ masuk: 0, keluar: 0, saldo: 0 });
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     jenis: 'masuk' as 'masuk' | 'keluar',
     kategori: 'Persembahan',
@@ -18,18 +19,24 @@ export default function Keuangan() {
     tanggal: new Date().toISOString().split('T')[0],
   });
 
-  useEffect(() => {
-    let masuk = 0, keluar = 0;
-    keuangan.forEach((item) => {
-      if (item.jenis === 'masuk') masuk += item.jumlah;
-      else keluar += item.jumlah;
-    });
-    setStats({ masuk, keluar, saldo: masuk - keluar });
-  }, [keuangan]);
+  const stats = useMemo(
+    () => {
+      const result = keuangan.reduce(
+        (acc, item) => {
+          if (item.jenis === 'masuk') acc.masuk += item.jumlah;
+          else acc.keluar += item.jumlah;
+          return acc;
+        },
+        { masuk: 0, keluar: 0, saldo: 0 }
+      );
+      return { ...result, saldo: result.masuk - result.keluar };
+    },
+    [keuangan]
+  );
 
   const filteredKeuangan = filter === 'semua' ? keuangan : keuangan.filter((k) => k.jenis === filter);
 
-  const handleOpenModal = (item?: any) => {
+  const handleOpenModal = (item?: KeuanganType) => {
     if (item) {
       setEditingId(item.id);
       setFormData({ jenis: item.jenis, kategori: item.kategori, jumlah: item.jumlah, deskripsi: item.deskripsi, tanggal: item.tanggal });
@@ -42,13 +49,15 @@ export default function Keuangan() {
 
   const handleSave = () => {
     if (formData.jumlah <= 0) {
-      alert('Jumlah harus > 0');
+      showToast('Jumlah harus lebih besar dari 0', 'error');
       return;
     }
-    if (editingId) {
-      updateKeuangan(Number(editingId), formData);
+    if (editingId !== null) {
+      updateKeuangan(editingId, formData);
+      showToast('Transaksi berhasil diperbarui!', 'success');
     } else {
       addKeuangan(formData);
+      showToast('Transaksi baru berhasil ditambahkan!', 'success');
     }
     setIsModalOpen(false);
   };
@@ -156,8 +165,11 @@ export default function Keuangan() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Hapus?')) deleteKeuangan(item.id);
+                        onClick={async () => {
+                          if (confirm('Hapus?')) {
+                            await deleteKeuangan(item.id);
+                            showToast('Transaksi berhasil dihapus!', 'success');
+                          }
                         }}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >

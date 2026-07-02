@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { BotService } from './bot.service';
 import { TokenService } from './token.service';
 import { UseGuards } from '@nestjs/common';
@@ -28,17 +35,25 @@ export class BotController {
   }
 
   @Post('request-pairing-code')
-  async requestPairingCode(@Body() body: { phoneNumber: string; token: string }) {
+  async requestPairingCode(
+    @Body() body: { phoneNumber: string; token: string },
+  ) {
     const isValid = await this.tokenService.validateToken(body.token);
     if (!isValid) {
-      throw new HttpException('Token tidak valid atau kadaluarsa', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Token tidak valid atau kadaluarsa',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     try {
       const code = await this.botService.requestPairingCode(body.phoneNumber);
       return { code: code };
     } catch (error) {
-      throw new HttpException('Gagal memproses kode pairing', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Gagal memproses kode pairing',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

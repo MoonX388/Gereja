@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 export function useApi<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,5 +23,5 @@ export function useApi<T>(url: string) {
       .finally(() => setLoading(false));
   }, [url, router]);
 
-  return { data, loading, error };
+  return { data, loading };
 }

@@ -9,10 +9,10 @@ export function middleware(request: NextRequest) {
   // Proteksi semua rute /admin/*
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
+      return NextResponse.redirect(new URL('/login', request.url));
     }
     // Optional: cek role dari token (jika disimpan di cookie/JWT)
-    // Jika role bukan admin → redirect ke /status/403
+    // Jika role bukan admin → redirect ke /error/403
   }
 
   // Bisa tambahkan proteksi untuk rute lain jika perlu
