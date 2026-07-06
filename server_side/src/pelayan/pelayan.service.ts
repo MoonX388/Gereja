@@ -1,29 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Pelayan } from '../entity/pelayan.entity';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class PelayanService {
-  constructor(
-    @InjectRepository(Pelayan)
-    private pelayanRepo: Repository<Pelayan>,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async findAll(): Promise<Pelayan[]> {
-    return this.pelayanRepo.find({ order: { id: 'DESC' } });
+    return this.supabaseService.findAll<Pelayan>('pelayan', 'id', false);
   }
 
   async create(data: Partial<Pelayan>): Promise<Pelayan> {
-    const item = this.pelayanRepo.create(data);
-    return this.pelayanRepo.save(item);
+    return this.supabaseService.create<Pelayan>('pelayan', data);
   }
 
   async update(id: number, data: Partial<Pelayan>): Promise<void> {
-    await this.pelayanRepo.update(id, data);
+    await this.supabaseService.update<Pelayan>('pelayan', id, data);
   }
 
   async remove(id: number): Promise<void> {
-    await this.pelayanRepo.delete(id);
+    await this.supabaseService.remove('pelayan', id);
   }
 }

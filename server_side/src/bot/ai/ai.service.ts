@@ -1,17 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from '../../entity/data.entity';
+import { SupabaseService } from '../../supabase/supabase.service';
 
 @Injectable()
 export class AiService {
   private generator: any;
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    private readonly configService: ConfigService, // 👈 inject
+    private readonly supabaseService: SupabaseService,
+    private readonly configService: ConfigService,
   ) {}
 
   async generate(prompt: string, nomorHP: string): Promise<string> {
@@ -29,9 +27,7 @@ export class AiService {
     }
 
     // --- Sisa kode pencarian database di bawah ini tetap sama seperti kemarin ---
-    const userGereja = await this.userRepository.findOne({
-      where: { telepon: nomorHP },
-    });
+    const userGereja = await this.supabaseService.findOneByField<User>('users', 'telepon', nomorHP);
 
     let infoUser = `User ini belum terdaftar di database Jemaat resmi.`;
     if (userGereja) {

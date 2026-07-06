@@ -1,31 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Notifikasi } from '../entity/notifikasi.entity';
 import { User } from '../entity/data.entity';
 import { BotService } from '../bot/bot.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class NotifikasiService {
   constructor(
-    @InjectRepository(Notifikasi)
-    private notifRepo: Repository<Notifikasi>,
-    @InjectRepository(User)
-    private userRepo: Repository<User>,
+    private readonly supabaseService: SupabaseService,
     private botService: BotService,
   ) {}
 
-  // ✅ Ambil semua notifikasi
   async findAll(): Promise<Notifikasi[]> {
-    return this.notifRepo.find({ order: { id: 'DESC' } });
+    return this.supabaseService.findAll<Notifikasi>('notifikasi', 'id', false);
   }
 
-  // ✅ Buat notifikasi dan kirim broadcast
   async create(data: Partial<Notifikasi>): Promise<Notifikasi> {
-    const item = this.notifRepo.create(data);
-    const saved = await this.notifRepo.save(item);
+    const saved = await this.supabaseService.create<Notifikasi>('notifikasi', data);
 
-    // Kirim broadcast jika ada pesan dan target
     if (data.pesan && data.target) {
       await this.sendBroadcast(data.target, data.pesan, data.judul);
     }
@@ -33,36 +25,25 @@ export class NotifikasiService {
     return saved;
   }
 
-  // ✅ Update (hanya satu)
   async update(id: number, data: Partial<Notifikasi>): Promise<void> {
-    await this.notifRepo.update(id, data);
+    await this.supabaseService.update<Notifikasi>('notifikasi', id, data);
   }
 
-  // ✅ Delete (hanya satu)
   async remove(id: number): Promise<void> {
-    await this.notifRepo.delete(id);
+    await this.supabaseService.remove('notifikasi', id);
   }
 
-  // ---------- FUNGSI BROADCAST ----------
   private async sendBroadcast(target: string, message: string, title?: string) {
     let users: User[] = [];
 
-    // Gunakan select dengan object { telepon: true } agar TypeORM tidak protes
     if (target === 'Semua Jemaat') {
-      users = await this.userRepo.find({ select: { telepon: true } });
+      users = await this.supabaseService.findAll<User>('users', 'id', false);
     } else if (target === 'Pelayan') {
-      users = await this.userRepo.find({
-        where: { role: 'pelayan' },
-        select: { telepon: true },
-      });
+      users = await this.supabaseService.findWhere<User>('users', { role: 'pelayan' }, 'id', false);
     } else if (target === 'Jemaat Aktif') {
-      users = await this.userRepo.find({
-        where: { status: 'Aktif' },
-        select: { telepon: true },
-      });
+      users = await this.supabaseService.findWhere<User>('users', { status: 'Aktif' }, 'id', false);
     }
 
-    // Filter nomor HP yang valid
     const phoneNumbers = users
       .map((u) => u.telepon)
       .filter((tel): tel is string => !!tel && tel.length > 0);
@@ -76,9 +57,7 @@ export class NotifikasiService {
 
     try {
       await this.botService.sendBroadcast(phoneNumbers, fullMessage);
-      console.log(
-        `✅ Broadcast berhasil dikirim ke ${phoneNumbers.length} penerima.`,
-      );
+      console.log(`✅ Broadcast berhasil dikirim ke ${phoneNumbers.length} penerima.`);
     } catch (error) {
       console.error('❌ Gagal mengirim broadcast:', error);
     }

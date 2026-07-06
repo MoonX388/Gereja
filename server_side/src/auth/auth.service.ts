@@ -25,6 +25,11 @@ export class AuthService {
   }
 
   async login(emailOrUsername: string, password: string) {
+    const normalizedIdentifier = emailOrUsername.toLowerCase().trim();
+    if (normalizedIdentifier === 'user demo' || normalizedIdentifier === 'demo' || normalizedIdentifier === 'demo@gereja.local') {
+      throw new UnauthorizedException('Mode demo hanya tersedia pada aplikasi klien');
+    }
+
     // Cari berdasarkan email dulu, kalau gak ketemu cari berdasarkan username
     let user = await this.usersService.findByEmail(emailOrUsername);
 

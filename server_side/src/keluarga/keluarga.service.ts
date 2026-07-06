@@ -1,29 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Keluarga } from '../entity/keluarga.entity';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class KeluargaService {
-  constructor(
-    @InjectRepository(Keluarga)
-    private keluargaRepo: Repository<Keluarga>,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async findAll(): Promise<Keluarga[]> {
-    return this.keluargaRepo.find({ order: { id: 'DESC' } });
+    return this.supabaseService.findAll<Keluarga>('keluarga', 'id', false);
   }
 
   async create(data: Partial<Keluarga>): Promise<Keluarga> {
-    const item = this.keluargaRepo.create(data);
-    return this.keluargaRepo.save(item);
+    return this.supabaseService.create<Keluarga>('keluarga', data);
   }
 
   async update(id: number, data: Partial<Keluarga>): Promise<void> {
-    await this.keluargaRepo.update(id, data);
+    await this.supabaseService.update<Keluarga>('keluarga', id, data);
   }
 
   async remove(id: number): Promise<void> {
-    await this.keluargaRepo.delete(id);
+    await this.supabaseService.remove('keluarga', id);
   }
 }

@@ -1,29 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Inventaris } from '../entity/inventaris.entity';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class InventarisService {
-  constructor(
-    @InjectRepository(Inventaris)
-    private inventarisRepo: Repository<Inventaris>,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async findAll(): Promise<Inventaris[]> {
-    return this.inventarisRepo.find({ order: { id: 'DESC' } });
+    return this.supabaseService.findAll<Inventaris>('inventaris', 'id', false);
   }
 
   async create(data: Partial<Inventaris>): Promise<Inventaris> {
-    const item = this.inventarisRepo.create(data);
-    return this.inventarisRepo.save(item);
+    return this.supabaseService.create<Inventaris>('inventaris', data);
   }
 
   async update(id: number, data: Partial<Inventaris>): Promise<void> {
-    await this.inventarisRepo.update(id, data);
+    await this.supabaseService.update<Inventaris>('inventaris', id, data);
   }
 
   async remove(id: number): Promise<void> {
-    await this.inventarisRepo.delete(id);
+    await this.supabaseService.remove('inventaris', id);
   }
 }

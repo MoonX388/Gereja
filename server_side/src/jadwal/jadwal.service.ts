@@ -1,29 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Jadwal } from '../entity/jadwal.entity';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class JadwalService {
-  constructor(
-    @InjectRepository(Jadwal)
-    private jadwalRepo: Repository<Jadwal>,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async findAll(): Promise<Jadwal[]> {
-    return this.jadwalRepo.find({ order: { tanggal: 'DESC' } });
+    return this.supabaseService.findAll<Jadwal>('jadwal', 'tanggal', false);
   }
 
   async create(data: Partial<Jadwal>): Promise<Jadwal> {
-    const item = this.jadwalRepo.create(data);
-    return this.jadwalRepo.save(item);
+    return this.supabaseService.create<Jadwal>('jadwal', data);
   }
 
   async update(id: number, data: Partial<Jadwal>): Promise<void> {
-    await this.jadwalRepo.update(id, data);
+    await this.supabaseService.update<Jadwal>('jadwal', id, data);
   }
 
   async remove(id: number): Promise<void> {
-    await this.jadwalRepo.delete(id);
+    await this.supabaseService.remove('jadwal', id);
   }
 }

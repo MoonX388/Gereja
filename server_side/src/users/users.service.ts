@@ -1,56 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from '../entity/data.entity';
 import * as bcrypt from 'bcrypt';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
-  // 1. Ambil semua data User
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find({ order: { id: 'DESC' } });
+    return this.supabaseService.findAll<User>('users', 'id', false);
   }
 
-  // 2. Tambah User Baru
   async create(userData: Partial<User>): Promise<User> {
-    // Beri nilai default jika saat input jemaat biasa tidak mengisi email/password
     if (!userData.email) {
-      // Buat email otomatis unik berdasarkan nama & timestamp jika jemaat biasa tidak punya akun
       userData.email = `jemaat_${Date.now()}@gereja.local`;
       userData.password = 'password_default_123';
     }
-    const user = this.usersRepository.create(userData);
-    return this.usersRepository.save(user);
-  }
-
-  // 3. Update User / Ganti Jabatan (Role)
-  async update(id: number, userData: Partial<User>): Promise<void> {
-    // Jika ada password, hash dulu
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, 10);
     }
-    await this.usersRepository.update(id, userData);
+    return this.supabaseService.create<User>('users', userData);
   }
 
-  // 4. Hapus User
+  async update(id: number, userData: Partial<User>): Promise<void> {
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 10);
+    }
+    await this.supabaseService.update<User>('users', id, userData);
+  }
+
   async remove(id: number): Promise<void> {
-    await this.usersRepository.delete(id);
+    await this.supabaseService.remove('users', id);
   }
 
-  // Fungsi pencarian bawaan auth kamu (jangan dihapus)
   async findByUsername(username: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { username } });
+    return this.supabaseService.findOneByField<User>('users', 'username', username);
   }
+
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+    return this.supabaseService.findOneByField<User>('users', 'email', email);
   }
 
   async findById(id: number): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+    return this.supabaseService.findById<User>('users', id);
   }
 }
