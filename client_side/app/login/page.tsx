@@ -106,9 +106,11 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-          <div className="text-center text-xs text-gray-400 mt-5">
-            <i className="fa-regular fa-building mr-1"></i> Gunakan akun admin: admin / admin123
-          </div>
+          {process.env.NEXT_PUBLIC_DEMO_MODE !== 'false' && (
+            <div className="text-center text-xs text-gray-400 mt-5">
+              <i className="fa-regular fa-building mr-1"></i> Gunakan akun admin: admin / admin123
+            </div>
+          )}
         </div>
       </div>
     </div>
