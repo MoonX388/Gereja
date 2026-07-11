@@ -2,9 +2,27 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '@/lib/api';
+import {
+  dummyAbsensi,
+  dummyInventaris,
+  dummyJadwal,
+  dummyJemaat,
+  dummyKeluarga,
+  dummyKeuangan,
+  dummyNotifikasi,
+  dummyPelayan,
+  dummySettings,
+} from '../data/dummyData';
 
 // ============================================================
-// 1. INTERFACE / TIPE DATA (semua sudah pakai id: number)
+// ⚙️ SAKLAR UTAMA APLIKASI (UBAH DI SINI)
+// ============================================================
+// Ubah ke true  -> Untuk menggunakan DATA DEMO (Grafik & data langsung terisi penuh)
+// Ubah ke false -> Untuk menggunakan AKUN ASLI (Menarik data asli dari database SQLite lokal)
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'; // Gunakan variabel lingkungan untuk kontrol
+
+// ============================================================
+// 1. INTERFACE / TIPE DATA
 // ============================================================
 
 export interface Jemaat {
@@ -122,7 +140,6 @@ export interface AdminBackupData {
 // ============================================================
 
 interface AdminContextType {
-  // Data
   jemaat: Jemaat[];
   pelayan: Pelayan[];
   keuangan: Keuangan[];
@@ -133,49 +150,30 @@ interface AdminContextType {
   notifikasi: Notifikasi[];
   settings: Settings;
   currentPage: string;
-
   setCurrentPage: (page: string) => void;
-
-  // CRUD Jemaat
   addJemaat: (item: Omit<Jemaat, 'id'>) => Promise<void>;
   updateJemaat: (id: number, item: Omit<Jemaat, 'id'>) => Promise<void>;
   deleteJemaat: (id: number) => Promise<void>;
-
-  // CRUD Pelayan
   addPelayan: (item: Omit<Pelayan, 'id'>) => Promise<void>;
   updatePelayan: (id: number, item: Omit<Pelayan, 'id'>) => Promise<void>;
   deletePelayan: (id: number) => Promise<void>;
-
-  // CRUD Keuangan
   addKeuangan: (item: Omit<Keuangan, 'id'>) => Promise<void>;
   updateKeuangan: (id: number, item: Omit<Keuangan, 'id'>) => Promise<void>;
   deleteKeuangan: (id: number) => Promise<void>;
-
-  // CRUD Inventaris
   addInventaris: (item: Omit<Inventaris, 'id'>) => Promise<void>;
   updateInventaris: (id: number, item: Omit<Inventaris, 'id'>) => Promise<void>;
   deleteInventaris: (id: number) => Promise<void>;
-
-  // CRUD Keluarga
   addKeluarga: (item: Omit<Keluarga, 'id'>) => Promise<void>;
   updateKeluarga: (id: number, item: Omit<Keluarga, 'id'>) => Promise<void>;
   deleteKeluarga: (id: number) => Promise<void>;
-
-  // CRUD Jadwal
   addJadwal: (item: Omit<Jadwal, 'id'>) => Promise<void>;
   updateJadwal: (id: number, item: Omit<Jadwal, 'id'>) => Promise<void>;
   deleteJadwal: (id: number) => Promise<void>;
-
-  // CRUD Absensi (masih localStorage, karena belum ada endpoint)
   addAbsensi: (item: Omit<Absensi, 'id'>) => void;
   deleteAbsensi: (id: number) => void;
-
-  // CRUD Notifikasi
   addNotifikasi: (item: Omit<Notifikasi, 'id'>) => Promise<void>;
-  updateNotifikasi?: (id: number, item: Omit<Notifikasi, 'id'>) => Promise<void>; // opsional
+  updateNotifikasi?: (id: number, item: Omit<Notifikasi, 'id'>) => Promise<void>;
   deleteNotifikasi: (id: number) => Promise<void>;
-
-  // Settings (localStorage)
   updateSettings: (newSettings: Partial<Settings>) => void;
   importData: (data: Partial<AdminBackupData>) => void;
 }
@@ -186,10 +184,8 @@ interface AdminContextType {
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
-// Key localStorage untuk fallback & settings
 const STORAGE_KEYS = {
   settings: 'gd_settings',
-  // fallback untuk data jika API mati (opsional)
 };
 
 const DEFAULT_SETTINGS: Settings = {
@@ -211,11 +207,14 @@ const DEFAULT_SETTINGS: Settings = {
   emailFrom: '',
 };
 
-// Helper untuk generate ID (hanya untuk absensi yang masih lokal)
+// Logika fungsi pembaca saklar utama
+const isDummyModeEnabled = () => {
+  return DEMO_MODE;
+};
+
 const generateId = () => Date.now() + Math.floor(Math.random() * 1000);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  // -------------------- STATE --------------------
   const getLocalAbsensi = (): Absensi[] => {
     if (typeof window === 'undefined') return [];
     const saved = localStorage.getItem('gd_absensi');
@@ -239,14 +238,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => getLocalSettings());
   const [currentPage, setCurrentPage] = useState('dashboard');
 
-  // -------------------- FUNGSI LOAD DATA DARI API --------------------
   const loadData = async <T,>(url: string, setState: React.Dispatch<React.SetStateAction<T[]>>, storageKey?: string) => {
     try {
       const res = await api.get(url);
       setState(res.data);
     } catch (error) {
       console.error(`Gagal load ${url}:`, error);
-      // fallback ke localStorage jika disediakan
       if (storageKey) {
         const saved = localStorage.getItem(storageKey);
         if (saved) setState(JSON.parse(saved));
@@ -255,7 +252,20 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Muat semua data dari API
+    if (isDummyModeEnabled()) {
+      setJemaat(dummyJemaat as Jemaat[]);
+      setPelayan(dummyPelayan as Pelayan[]);
+      setKeuangan(dummyKeuangan as Keuangan[]);
+      setInventaris(dummyInventaris as Inventaris[]);
+      setKeluarga(dummyKeluarga as Keluarga[]);
+      setJadwal(dummyJadwal as Jadwal[]);
+      setNotifikasi(dummyNotifikasi as Notifikasi[]);
+      setAbsensi(dummyAbsensi as Absensi[]);
+      setSettings({ ...DEFAULT_SETTINGS, ...dummySettings });
+      return;
+    }
+
+    // Jika DEMO_MODE = false, tarik data dari SQLite lokal kamu
     loadData('/jemaat', setJemaat);
     loadData('/pelayan', setPelayan);
     loadData('/keuangan', setKeuangan);
@@ -263,21 +273,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     loadData('/keluarga', setKeluarga);
     loadData('/jadwal', setJadwal);
     loadData('/notifikasi', setNotifikasi);
-
-    // Absensi dan settings sudah diinisialisasi dari localStorage di state awal.
   }, []);
 
-  // Helper untuk menyimpan ke localStorage (hanya untuk absensi & settings)
   const saveToLocal = (key: string, data: unknown) => {
     localStorage.setItem(key, JSON.stringify(data));
   };
 
   // ============================================================
-  // 4. CRUD FUNCTIONS (SEMUA MENGGUNAKAN API, KECUALI ABSENSI)
+  // 4. CRUD FUNCTIONS (Sudah Valid Type Void)
   // ============================================================
-
-  // ---------- JEMAAT ----------
   const addJemaat = async (item: Omit<Jemaat, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       const res = await api.post('/jemaat', item);
       setJemaat((prev) => [res.data, ...prev]);
@@ -286,6 +292,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const updateJemaat = async (id: number, item: Omit<Jemaat, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.put(`/jemaat/${id}`, item);
       setJemaat((prev) => prev.map((j) => (j.id === id ? { ...item, id } : j)));
@@ -294,6 +301,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const deleteJemaat = async (id: number) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/jemaat/${id}`);
       setJemaat((prev) => prev.filter((j) => j.id !== id));
@@ -302,8 +310,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ---------- PELAYAN ----------
   const addPelayan = async (item: Omit<Pelayan, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       const res = await api.post('/pelayan', item);
       setPelayan((prev) => [res.data, ...prev]);
@@ -312,6 +320,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const updatePelayan = async (id: number, item: Omit<Pelayan, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.put(`/pelayan/${id}`, item);
       setPelayan((prev) => prev.map((p) => (p.id === id ? { ...item, id } : p)));
@@ -320,6 +329,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const deletePelayan = async (id: number) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/pelayan/${id}`);
       setPelayan((prev) => prev.filter((p) => p.id !== id));
@@ -328,8 +338,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ---------- KEUANGAN ----------
   const addKeuangan = async (item: Omit<Keuangan, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       const res = await api.post('/keuangan', item);
       setKeuangan((prev) => [res.data, ...prev]);
@@ -338,6 +348,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const updateKeuangan = async (id: number, item: Omit<Keuangan, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.put(`/keuangan/${id}`, item);
       setKeuangan((prev) => prev.map((k) => (k.id === id ? { ...item, id } : k)));
@@ -346,6 +357,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const deleteKeuangan = async (id: number) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/keuangan/${id}`);
       setKeuangan((prev) => prev.filter((k) => k.id !== id));
@@ -354,8 +366,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ---------- INVENTARIS ----------
   const addInventaris = async (item: Omit<Inventaris, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       const res = await api.post('/inventaris', item);
       setInventaris((prev) => [res.data, ...prev]);
@@ -364,6 +376,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const updateInventaris = async (id: number, item: Omit<Inventaris, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.put(`/inventaris/${id}`, item);
       setInventaris((prev) => prev.map((inv) => (inv.id === id ? { ...item, id } : inv)));
@@ -372,6 +385,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const deleteInventaris = async (id: number) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/inventaris/${id}`);
       setInventaris((prev) => prev.filter((inv) => inv.id !== id));
@@ -380,8 +394,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ---------- KELUARGA ----------
   const addKeluarga = async (item: Omit<Keluarga, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       const res = await api.post('/keluarga', item);
       setKeluarga((prev) => [res.data, ...prev]);
@@ -390,6 +404,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const updateKeluarga = async (id: number, item: Omit<Keluarga, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.put(`/keluarga/${id}`, item);
       setKeluarga((prev) => prev.map((k) => (k.id === id ? { ...item, id } : k)));
@@ -398,6 +413,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const deleteKeluarga = async (id: number) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/keluarga/${id}`);
       setKeluarga((prev) => prev.filter((k) => k.id !== id));
@@ -406,8 +422,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ---------- JADWAL ----------
   const addJadwal = async (item: Omit<Jadwal, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       const res = await api.post('/jadwal', item);
       setJadwal((prev) => [...prev, res.data].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()));
@@ -416,18 +432,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const updateJadwal = async (id: number, item: Omit<Jadwal, 'id'>) => {
+    if (isDummyModeEnabled()) {
+      setJadwal((prev) => prev.map((j) => (j.id === id ? { ...item, id } : j)).sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()));
+      return;
+    }
     try {
       await api.put(`/jadwal/${id}`, item);
-      setJadwal((prev) =>
-        prev
-          .map((j) => (j.id === id ? { ...item, id } : j))
-          .sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime())
-      );
+      setJadwal((prev) => prev.map((j) => (j.id === id ? { ...item, id } : j)).sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()));
     } catch (error) {
       console.error('Gagal update jadwal:', error);
     }
   };
   const deleteJadwal = async (id: number) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/jadwal/${id}`);
       setJadwal((prev) => prev.filter((j) => j.id !== id));
@@ -436,8 +453,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ---------- NOTIFIKASI ----------
   const addNotifikasi = async (item: Omit<Notifikasi, 'id'>) => {
+    if (isDummyModeEnabled()) return;
     try {
       const res = await api.post('/notifikasi', item);
       setNotifikasi((prev) => [res.data, ...prev]);
@@ -446,6 +463,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
   const deleteNotifikasi = async (id: number) => {
+    if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/notifikasi/${id}`);
       setNotifikasi((prev) => prev.filter((n) => n.id !== id));
@@ -454,7 +472,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ---------- ABSENSI (masih lokal) ----------
   const addAbsensi = (item: Omit<Absensi, 'id'>) => {
     const newItem = { ...item, id: generateId() };
     const updated = [newItem, ...absensi];
@@ -467,7 +484,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     saveToLocal('gd_absensi', updated);
   };
 
-  // ---------- SETTINGS (lokal) ----------
   const updateSettings = (newSettings: Partial<Settings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
@@ -493,59 +509,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ============================================================
-  // 5. CONTEXT VALUE
-  // ============================================================
-
   const value: AdminContextType = {
-    jemaat,
-    pelayan,
-    keuangan,
-    inventaris,
-    keluarga,
-    jadwal,
-    absensi,
-    notifikasi,
-    settings,
-    currentPage,
-    setCurrentPage,
-    addJemaat,
-    updateJemaat,
-    deleteJemaat,
-    addPelayan,
-    updatePelayan,
-    deletePelayan,
-    addKeuangan,
-    updateKeuangan,
-    deleteKeuangan,
-    addInventaris,
-    updateInventaris,
-    deleteInventaris,
-    addKeluarga,
-    updateKeluarga,
-    deleteKeluarga,
-    addJadwal,
-    updateJadwal,
-    deleteJadwal,
-    addAbsensi,
-    deleteAbsensi,
-    addNotifikasi,
-    deleteNotifikasi,
-    updateSettings,
-    importData,
+    jemaat, pelayan, keuangan, inventaris, keluarga, jadwal, absensi, notifikasi, settings, currentPage, setCurrentPage,
+    addJemaat, updateJemaat, deleteJemaat, addPelayan, updatePelayan, deletePelayan, addKeuangan, updateKeuangan, deleteKeuangan,
+    addInventaris, updateInventaris, deleteInventaris, addKeluarga, updateKeluarga, deleteKeluarga, addJadwal, updateJadwal, deleteJadwal,
+    addAbsensi, deleteAbsensi, addNotifikasi, deleteNotifikasi, updateSettings, importData
   };
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }
 
-// ============================================================
-// 6. HOOK
-// ============================================================
-
 export function useAdmin() {
   const context = useContext(AdminContext);
-  if (!context) {
-    throw new Error('useAdmin must be used within AdminProvider');
-  }
+  if (!context) throw new Error('useAdmin must be used within AdminProvider');
   return context;
 }

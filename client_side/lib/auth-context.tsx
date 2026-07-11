@@ -8,6 +8,7 @@ interface User {
   email: string;
   role: string;
   username: string;
+  isDemo?: boolean;
 }
 
 interface AuthContextType {
@@ -39,6 +40,21 @@ const clearAuthToken = () => {
   document.cookie = 'auth_token=; path=/; max-age=0';
 };
 
+const DUMMY_AUTH_TOKEN = 'demo_token';
+const demoLoginIdentifiers = [
+  'admin',
+  'admin@gereja.local',
+  'user demo',
+  'demo',
+  'demo@gereja.local',
+];
+
+const isDemoLogin = (identifier: string, password: string) => {
+  return demoLoginIdentifiers.includes(identifier.toLowerCase().trim()) && password === 'admin123';
+};
+
+const isDummyToken = (token?: string) => token === DUMMY_AUTH_TOKEN;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(() => {
@@ -49,7 +65,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token') || getCookieToken();
-    if (!token) return;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    if (isDummyToken(token)) {
+      setUser({
+        id: 1,
+        nama: 'Admin Demo',
+        email: 'admin@gereja.local',
+        role: 'admin',
+        username: 'admin',
+        isDemo: true,
+      });
+      setLoading(false);
+      return;
+    }
 
     setAuthToken(token);
     api.get('/auth/profile')
@@ -59,6 +91,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (isDemoLogin(email, password)) {
+      const token = DUMMY_AUTH_TOKEN;
+      setAuthToken(token);
+      setUser({
+        id: 1,
+        nama: 'Admin Demo',
+        email: 'admin@gereja.local',
+        role: 'admin',
+        username: 'admin',
+        isDemo: true,
+      });
+      return;
+    }
+
     const res = await api.post('/auth/login', { email, password });
     setAuthToken(res.data.access_token);
     setUser(res.data.user);

@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL:
-    "http://192.168.56.1:3001",
+    "http://localhost:3003/", // Ganti dengan URL server Anda
 });
 
 api.interceptors.request.use((config) => {
