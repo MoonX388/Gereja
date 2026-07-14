@@ -7,14 +7,18 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  // ClassSerializerInterceptor butuh Reflector
+  // ClassSerializerInterceptor butuh Reflector (Tetap aman)
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   const corsOrigin = configService.get<string>('CORS_ORIGIN') || '*';
   app.enableCors({ origin: corsOrigin });
 
-  const port = configService.get<number>('SERVER_PORT') || 3001;
-  await app.listen(port);
-  console.log(`Server running on port ${port}`);
+  // 🚀 PERBAIKAN 1: Dahulukan 'process.env.PORT' bawaan Railway, baru fallback ke ConfigService
+  const port = process.env.PORT || configService.get<number>('SERVER_PORT') || 3001;
+
+  // 🚀 PERBAIKAN 2: Wajib tambahkan '0.0.0.0' agar jaringan Railway bisa menembus masuk
+  await app.listen(port, '0.0.0.0');
+  
+  console.log(`Server running successfully on port ${port}`);
 }
 bootstrap();
