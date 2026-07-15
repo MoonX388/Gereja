@@ -10,7 +10,7 @@ async function bootstrap() {
   // ClassSerializerInterceptor butuh Reflector (Tetap aman)
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  const corsOrigin = configService.get<string>('CORS_ORIGIN') || '*';
+  const corsOrigin = '*';
   app.enableCors({ origin: corsOrigin });
 
   // 🚀 PERBAIKAN 1: Dahulukan 'process.env.PORT' bawaan Railway, baru fallback ke ConfigService
