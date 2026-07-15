@@ -11,7 +11,12 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   const corsOrigin = '*';
-  app.enableCors({ origin: corsOrigin });
+  app.enableCors({
+  origin: 'https://demo.gerejapintar.id', // allow only this domain
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true, // if you need cookies or auth headers
+});
 
   // 🚀 PERBAIKAN 1: Dahulukan 'process.env.PORT' bawaan Railway, baru fallback ke ConfigService
   const port = process.env.PORT || configService.get<number>('SERVER_PORT') || 3001;
