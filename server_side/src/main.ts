@@ -12,7 +12,7 @@ async function bootstrap() {
 
   const corsOrigin = '*';
   app.enableCors({
-  origin: 'https://demo.gerejapintar.id', // allow only this domain
+  origin: 'https://gerejapintar.id', // allow only this domain
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true, // if you need cookies or auth headers
@@ -22,7 +22,7 @@ async function bootstrap() {
   const port = process.env.PORT || configService.get<number>('SERVER_PORT') || 3001;
 
   // 🚀 PERBAIKAN 2: Wajib tambahkan '0.0.0.0' agar jaringan Railway bisa menembus masuk
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port);
   
   console.log(`Server running successfully on port ${port}`);
 }

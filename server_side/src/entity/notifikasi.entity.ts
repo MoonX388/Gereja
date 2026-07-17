@@ -10,6 +10,9 @@ export class Notifikasi {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({nullable: true})
+  userId!: number;
+
   @Column({ type: 'varchar' })
   judul!: string;
 
@@ -22,7 +25,7 @@ export class Notifikasi {
   @Column({ type: 'varchar' })
   via!: string; // WhatsApp, SMS, Email
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   tanggal!: string;
 
   @CreateDateColumn()

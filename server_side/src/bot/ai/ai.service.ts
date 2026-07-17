@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../../entity/data.entity';
+import { data } from '../../entity/data.entity';
 
 @Injectable()
 export class AiService {
   private generator: any;
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    @InjectRepository(data)
+    private readonly dataRepository: Repository<data>,
     private readonly configService: ConfigService, // 👈 inject
   ) {}
 
@@ -29,7 +29,7 @@ export class AiService {
     }
 
     // --- Sisa kode pencarian database di bawah ini tetap sama seperti kemarin ---
-    const userGereja = await this.userRepository.findOne({
+    const userGereja = await this.dataRepository.findOne({
       where: { telepon: nomorHP },
     });
 

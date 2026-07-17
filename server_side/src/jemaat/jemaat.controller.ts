@@ -1,3 +1,5 @@
+// Gereja-main/server_side/src/jemaat/jemaat.controller.ts
+
 import {
   Controller,
   Get,
@@ -7,9 +9,10 @@ import {
   Body,
   Param,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { JemaatService } from './jemaat.service';
-import { User as Jemaat } from '../entity/data.entity';
+import { data as Jemaat } from '../entity/data.entity';
 import { AdminGuard } from '../auth/admin.guard';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -18,27 +21,35 @@ import { AuthGuard } from '@nestjs/passport';
 export class JemaatController {
   constructor(private readonly jemaatService: JemaatService) {}
 
+  @Get('dashboard')
+  async getDashboard(@Req() req: any) {
+    const subownerId = req.user.id; // ID Subowner didapat otomatis dari akun yang sedang login
+    return this.jemaatService.getDashboardData(subownerId);
+  }
+
   @Get()
-  async getAll(): Promise<Jemaat[]> {
-    return this.jemaatService.findAll();
+  async getAll(@Req() req: any): Promise<Jemaat[]> {
+    const subownerId = req.user.id; 
+    return this.jemaatService.findAll(subownerId);
   }
 
   @Post()
-  async create(@Body() data: Partial<Jemaat>): Promise<Jemaat> {
-    return this.jemaatService.create(data);
+  async create(@Body() data: Partial<Jemaat>, @Req() req: any): Promise<Jemaat> {
+    const subownerId = req.user.id;
+    return this.jemaatService.create(data, subownerId);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() data: any) {
-    // Hapus ": Promise<User>" dari baris ini jika sebelumnya ada
-    await this.jemaatService.update(Number(id), data);
+  async update(@Param('id') id: string, @Body() data: any, @Req() req: any) {
+    const subownerId = req.user.id;
+    await this.jemaatService.update(Number(id), data, subownerId);
     return { message: 'Data jemaat berhasil diperbarui' };
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) {
-    // Hapus ": Promise<User>" dari baris ini jika sebelumnya ada
-    await this.jemaatService.remove(Number(id));
+  async delete(@Param('id') id: string, @Req() req: any) {
+    const subownerId = req.user.id;
+    await this.jemaatService.remove(Number(id), subownerId);
     return { message: 'Data jemaat berhasil dihapus' };
   }
 }

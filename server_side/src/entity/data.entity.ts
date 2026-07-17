@@ -6,12 +6,19 @@ import {
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 
-@Entity()
-export class User {
+@Entity('data')
+export class data {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ unique: true, nullable: true }) // buat nullable dulu jika sudah ada data lama
+  // 🚀 CUKUP SEPERTI INI: Kolom biasa untuk menampung ID Subowner dari tabel sebelah
+  @Column({ nullable: true })
+  userId!: number;
+
+  @Column({ nullable: true })
+  namaGereja?: string;
+
+  @Column({ unique: true, nullable: true }) 
   username?: string;
 
   @Column({ unique: true })

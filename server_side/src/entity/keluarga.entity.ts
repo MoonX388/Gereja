@@ -10,6 +10,9 @@ export class Keluarga {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({nullable: true})
+  userId!: number;
+
   @Column({ type: 'varchar', unique: true })
   noKK!: string;
 
