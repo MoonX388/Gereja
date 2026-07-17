@@ -1,16 +1,35 @@
 'use client';
 
-import { useState } from 'react';
-import { useAdmin, Jemaat } from '../context/AdminContext';
+import { useState, useEffect } from 'react';
 import Modal from '../components/Modal';
 import { useToast } from '@/app/components/ToastContext';
+import api from "@/lib/api"; 
+
+interface Jemaat {
+  id: number;
+  nama: string;
+  gender: string;
+  tempatLahir?: string;
+  tglLahir?: string;
+  tempatBaptis?: string;
+  tglBaptis?: string;
+  tempatSidi?: string;
+  tglSidi?: string;
+  alamat?: string;
+  telepon?: string;
+  nikah?: string;
+  pekerjaan?: string;
+  status: string;
+}
 
 export default function DataJemaat() {
   const { showToast } = useToast();
-  const { jemaat, addJemaat, updateJemaat, deleteJemaat } = useAdmin();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  // State untuk menampung list jemaat dinamis dari database Supabase
+  const [jemaatList, setJemaatList] = useState<Jemaat[]>([]);
 
   type JemaatForm = Omit<Jemaat, 'id'>;
 
@@ -30,7 +49,23 @@ export default function DataJemaat() {
     status: 'Aktif',
   });
 
-  const filteredJemaat = jemaat.filter(
+  // Fungsi untuk menarik data jemaat secara real-time dari database
+  const fetchDashboardData = async () => {
+    try {
+      const res = await api.get('/jemaat/dashboard');
+      setJemaatList(res.data.jemaat || []);
+    } catch (error) {
+      console.error("Gagal memuat data jemaat:", error);
+      showToast("Gagal mengambil data dari database", "error");
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Filter pencarian berdasarkan nama dan alamat jemaat
+  const filteredJemaat = jemaatList.filter(
     (j) =>
       j.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
       j.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -42,17 +77,17 @@ export default function DataJemaat() {
       setFormData({
         nama: item.nama,
         gender: item.gender,
-        tempatLahir: item.tempatLahir,
-        tglLahir: item.tglLahir,
-        tempatBaptis: item.tempatBaptis,
-        tglBaptis: item.tglBaptis,
-        tempatSidi: item.tempatSidi,
-        tglSidi: item.tglSidi,
-        alamat: item.alamat,
-        telepon: item.telepon,
-        nikah: item.nikah,
-        pekerjaan: item.pekerjaan,
-        status: item.status,
+        tempatLahir: item.tempatLahir || '',
+        tglLahir: item.tglLahir || '',
+        tempatBaptis: item.tempatBaptis || '',
+        tglBaptis: item.tglBaptis || '',
+        tempatSidi: item.tempatSidi || '',
+        tglSidi: item.tglSidi || '',
+        alamat: item.alamat || '',
+        telepon: item.telepon || '',
+        nikah: item.nikah || 'Belum Menikah',
+        pekerjaan: item.pekerjaan || '',
+        status: item.status || 'Aktif',
       });
     } else {
       setEditingId(null);
@@ -75,29 +110,46 @@ export default function DataJemaat() {
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.nama.trim()) {
       showToast('Nama wajib diisi!', 'error');
       return;
     }
 
-    if (editingId !== null) {
-      updateJemaat(editingId, formData);
-      showToast('Data jemaat berhasil diperbarui!', 'success');
-    } else {
-      addJemaat(formData);
-      showToast('Jemaat baru berhasil ditambahkan!', 'success');
+    try {
+      if (editingId !== null) {
+        await api.put(`/jemaat/${editingId}`, formData);
+        showToast('Data jemaat berhasil diperbarui!', 'success');
+      } else {
+        await api.post('/jemaat', formData);
+        showToast('Jemaat baru berhasil ditambahkan!', 'success');
+      }
+      fetchDashboardData(); // Otomatis refresh tabel layar setelah menambah/mengedit
+      setIsModalOpen(false);
+    } catch (error) {
+      showToast('Gagal menyimpan data ke database', 'error');
     }
+  };
 
-    setIsModalOpen(false);
+  const handleDelete = async (id: number) => {
+    if (confirm('Apakah Anda yakin ingin menghapus data jemaat ini?')) {
+      try {
+        await api.delete(`/jemaat/${id}`);
+        showToast('Data jemaat berhasil dihapus!', 'success');
+        fetchDashboardData(); 
+      } catch (error) {
+        showToast('Gagal menghapus data', 'error');
+      }
+    }
   };
 
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+        {/* ===== HEADER ATAS: BERSIH & RAPI ===== */}
         <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h3 className="text-lg font-bold text-[#0f1a2e]">
-            <i className="fa-solid fa-users mr-2"></i>
+            <i className="fa-solid fa-users mr-2 text-[#1e3a5f]"></i>
             Data Jemaat
           </h3>
           <div className="flex gap-2 w-full sm:w-auto">
@@ -109,15 +161,17 @@ export default function DataJemaat() {
               className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm w-full sm:w-48"
             />
             <button
-  onClick={() => handleOpenModal()}
-  className="bg-[#1e3a5f] hover:bg-[#2c5282] text-white px-3 py-2 rounded-lg text-sm font-semibold transition"
-  title="Tambah"
->
-  <i className="fa-solid fa-plus"></i>
-  <span className="hidden sm:inline ml-1">Tambah</span>
-</button>
+              onClick={() => handleOpenModal()}
+              className="bg-[#1e3a5f] hover:bg-[#2c5282] text-white px-3 py-2 rounded-lg text-sm font-semibold transition"
+              title="Tambah"
+            >
+              <i className="fa-solid fa-plus"></i>
+              <span className="hidden sm:inline ml-1">Tambah</span>
+            </button>
           </div>
         </div>
+        
+        {/* ===== TABEL UTAMA: DINAMIS (JANGAN HARDCODE) ===== */}
         <div className="p-4 overflow-x-auto">
           {filteredJemaat.length > 0 ? (
             <table className="w-full text-sm modern-table">
@@ -136,16 +190,12 @@ export default function DataJemaat() {
               <tbody>
                 {filteredJemaat.map((item: Jemaat) => (
                   <tr key={item.id}>
+                    {/* Mengambil nama dinamis dari database Supabase */}
                     <td className="font-semibold">{item.nama}</td>
                     <td>{item.gender}</td>
                     <td>{item.tempatLahir ? `${item.tempatLahir}, ` : ''}{item.tglLahir || '-'}</td>
-                    
-                    {/* Menampilkan Data Baptis */}
                     <td>{item.tempatBaptis ? `${item.tempatBaptis}, ` : ''}{item.tglBaptis || '-'}</td>
-                    
-                    {/* Menampilkan Data Sidi */}
                     <td>{item.tempatSidi ? `${item.tempatSidi}, ` : ''}{item.tglSidi || '-'}</td>
-                    
                     <td className="text-xs">{item.alamat || '-'}</td>
                     <td>
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -160,12 +210,7 @@ export default function DataJemaat() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={async () => {
-                          if (confirm('Hapus?')) {
-                            await deleteJemaat(item.id);
-                            showToast('Data jemaat berhasil dihapus!', 'success');
-                          }
-                        }}
+                        onClick={() => handleDelete(item.id)}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -184,6 +229,7 @@ export default function DataJemaat() {
         </div>
       </div>
 
+      {/* ===== DIALOG MODAL INPUT DATA ===== */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -197,7 +243,7 @@ export default function DataJemaat() {
               type="text"
               value={formData.nama}
               onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]"
             />
           </div>
           
@@ -206,7 +252,7 @@ export default function DataJemaat() {
             <select
               value={formData.gender}
               onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]"
             >
               <option>Pria</option>
               <option>Wanita</option>
@@ -234,7 +280,6 @@ export default function DataJemaat() {
             </div>
           </div>
 
-          {/* Form Input Tempat & Tanggal Baptis */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-1">Tempat Baptis</label>
@@ -257,7 +302,6 @@ export default function DataJemaat() {
             </div>
           </div>
 
-          {/* Form Input Tempat & Tanggal Sidi */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-1">Tempat Sidi</label>

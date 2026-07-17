@@ -10,7 +10,7 @@ import QRCode from "react-qr-code";
 
 export default function Pengaturan() {
   const { settings, updateSettings } = useAdmin();
-  const { user } = useAuth();
+  const { user } = useAuth(); 
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -25,6 +25,29 @@ export default function Pengaturan() {
   const [botStatus, setBotStatus] = useState("");
   const [loginMethod, setLoginMethod] = useState<"pairing" | "qr">("pairing");
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+
+  // 🚀 Memuat data pendaftaran awal ke form pengaturan profil
+  useEffect(() => {
+  const fetchProfilGereja = async () => {
+    try {
+      // Kita tembak API dashboard yang sudah terbukti sukses di halaman data jemaat
+      const res = await api.get('/jemaat/dashboard');
+      
+      if (res.data?.subowner) {
+        setLocalSettings((prev) => ({
+          ...prev,
+          namaGereja: res.data.subowner.namaGereja || "", // 🏛️ Mengambil namaGereja asli dari tabel users
+          email: prev.email || res.data.subowner.email || "", // 📧 Mengambil email asli
+          username: res.data.subowner.username || user?.username || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Gagal memuat data profil gereja di pengaturan:", error);
+    }
+  };
+
+  fetchProfilGereja();
+}, [user]);
 
   // Ambil token WA
   useEffect(() => {
@@ -138,7 +161,7 @@ export default function Pengaturan() {
 
   return (
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
-      {/* ===== TAB NAVIGASI - STICKY ===== */}
+      {/* ===== TAB NAVIGASI ===== */}
       <div className="border-b border-gray-200 px-2 md:px-5 sticky top-0 z-10 bg-white">
         <nav className="flex flex-nowrap overflow-x-auto -mb-px space-x-1 md:space-x-2 min-w-max py-1 scrollbar-hide">
           {["profil", "akun", "database", "notif", "tampilan", "integrasi"].map((tab) => (
@@ -174,8 +197,8 @@ export default function Pengaturan() {
                 <input
                   type="text"
                   value={localSettings.namaGereja}
-                  onChange={(e) => setLocalSettings({ ...localSettings, namaGereja: e.target.value })}
-                  className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  disabled 
+                  className="w-full bg-gray-100 border-2 border-gray-300 rounded-lg px-3 py-2 text-gray-600 cursor-not-allowed focus:outline-none"
                 />
               </div>
               <div>
@@ -212,6 +235,7 @@ export default function Pengaturan() {
                   value={localSettings.email}
                   onChange={(e) => setLocalSettings({ ...localSettings, email: e.target.value })}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Masukkan email khusus gereja"
                 />
               </div>
               <div>
@@ -241,7 +265,7 @@ export default function Pengaturan() {
               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <p className="text-sm text-gray-700 mb-1"><span className="font-semibold">Nama:</span> {user?.nama || "Tidak diketahui"}</p>
                 <p className="text-sm text-gray-700 mb-1"><span className="font-semibold">Email:</span> {user?.email || "Tidak diketahui"}</p>
-                <p className="text-sm text-gray-700"><span className="font-semibold">Role:</span> {user?.role || "Tidak diketahui"}</p>
+                <p className="text-sm text-gray-700 mb-1"><span className="font-semibold">Role:</span> {user?.role || "Tidak diketahui"}</p>
                 <p className="text-sm text-gray-700"><span className="font-semibold">Username:</span> {user?.username || "Tidak diketahui"}</p>
               </div>
 
@@ -406,43 +430,6 @@ export default function Pengaturan() {
           <div>
             <h3 className="text-lg font-bold mb-4">Integrasi Bot WhatsApp</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Kolom Kiri: Email SMTP }
-              <div className="space-y-3">
-                <h4 className="font-semibold text-gray-700 border-b pb-2">Email Pengirim (SMTP)</h4>
-                <div>
-                  <label className="block text-sm font-semibold mb-1">SMTP Host</label>
-                  <input
-                    type="text"
-                    value={localSettings.smtpHost || ""}
-                    onChange={(e) => setLocalSettings({ ...localSettings, smtpHost: e.target.value })}
-                    className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="smtp.gmail.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Email Pengirim</label>
-                  <input
-                    type="email"
-                    value={localSettings.emailFrom || ""}
-                    onChange={(e) => setLocalSettings({ ...localSettings, emailFrom: e.target.value })}
-                    className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="admin@gereja.com"
-                  />
-                </div>
-                <button
-                  onClick={() =>
-                    handleSave({
-                      smtpHost: localSettings.smtpHost,
-                      emailFrom: localSettings.emailFrom,
-                    })
-                  }
-                  className="bg-[#1e3a5f] text-white px-5 py-2 rounded-lg font-semibold"
-                >
-                  Simpan Email
-                </button>
-              </div>*/}
-
-              {/* Kolom Kanan: WhatsApp Bot */}
               <div className="bg-green-50 p-5 rounded-xl border border-green-200 flex flex-col max-w-md">
                 <h4 className="font-semibold text-green-800 border-b border-green-200 pb-2 mb-4">
                   <i className="fa-brands fa-whatsapp mr-2"></i>Koneksi WhatsApp Bot

@@ -30,7 +30,7 @@ interface ErrorData {
   desc: string;
 }
 
-const version = process.env.NEXT_PUBLIC_APP_VERSION || 'v1.0';
+const version = process.env.NEXT_PUBLIC_APP_VERSION || 'v1.1';
 
 const errorMap: Record<number, ErrorData> = {
   200: { icon: FaCircleCheck, badge: 'OK', title: 'Permintaan Berhasil', desc: 'Server telah memproses permintaan Anda dengan sukses.' },

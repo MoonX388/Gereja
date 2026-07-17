@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL:
-    "https://gereja-production.up.railway.app/", // Ganti dengan URL server Anda
+    "https://gereja-production.up.railway.app", // Ganti dengan URL server Anda
 });
 
 api.interceptors.request.use((config) => {

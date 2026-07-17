@@ -9,6 +9,7 @@ interface User {
   role: string;
   username: string;
   isDemo?: boolean;
+  namaGereja?: string;
 }
 
 interface AuthContextType {
