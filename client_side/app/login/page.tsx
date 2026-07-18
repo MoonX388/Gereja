@@ -43,7 +43,7 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 w-full max-w-md login-card page-transition">
         <div className="text-center pt-5 pb-2">
           <i className="fa-solid fa-church text-4xl text-primary mb-1"></i>
-          <h2 className="text-xl font-bold text-dark">GerejaDigital</h2>
+          <h2 className="text-xl font-bold text-dark">Gereja Pintar</h2>
           <p className="text-gray-500 text-xs">Sistem Manajemen Gereja</p>
         </div>
 
