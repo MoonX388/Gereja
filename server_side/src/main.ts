@@ -12,11 +12,18 @@ async function bootstrap() {
 
   const corsOrigin = '*';
   app.enableCors({
-  origin: /^https:\/\/.*\.gerejapintar\.id$/, // allow only this domain
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow non-browser requests
+    if (origin.endsWith('.gerejapintar.id')) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true, // if you need cookies or auth headers
+  credentials: true,
 });
+
 
   // 🚀 PERBAIKAN 1: Dahulukan 'process.env.PORT' bawaan Railway, baru fallback ke ConfigService
   const port = process.env.PORT || configService.get<number>('SERVER_PORT') || 3001;
