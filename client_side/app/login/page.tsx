@@ -19,8 +19,22 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
-      await login(identifier, password);
+      // 🚀 1. DETEKSI NAMA SUBDOMAIN DARI URL BROWSER SEKARANG
+      const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+      const parts = hostname.split(".");
+      
+      let currentSubdomain = "";
+      // Jika diakses dari gbi-rock.gerejapintar.id, parts[0] adalah 'gbi-rock'
+      if (parts.length > 2 && parts[0] !== 'www' && parts[0] !== 'api') {
+        currentSubdomain = parts[0];
+      }
+
+      // 🚀 2. OPER VARIABEL SUBDOMAIN KE FUNGSI LOGIN DI CONTEXT
+      await login(identifier, password, currentSubdomain);
+      
+      // Lolos seleksi, masuk ke dashboard admin internal cabang
       router.push("/admin");
     } catch (error: unknown) {
       const typedError = error as { response?: { data?: { message?: string } } };
@@ -43,7 +57,7 @@ export default function LoginPage() {
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 w-full max-w-md login-card page-transition">
         <div className="text-center pt-5 pb-2">
           <i className="fa-solid fa-church text-4xl text-primary mb-1"></i>
-          <h2 className="text-xl font-bold text-dark">Gereja Pintar</h2>
+          <h2 className="text-xl font-bold text-dark">GerejaDigital</h2>
           <p className="text-gray-500 text-xs">Sistem Manajemen Gereja</p>
         </div>
 

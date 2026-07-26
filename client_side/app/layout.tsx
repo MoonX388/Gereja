@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GerejaDigital",
+  title: "Gereja Pintar",
   description: "Sistem Manajemen Gereja",
 };
 

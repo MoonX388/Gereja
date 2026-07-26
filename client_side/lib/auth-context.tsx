@@ -15,7 +15,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  // 🚀 PERBAIKAN: Menambahkan parameter subdomain pada signature interface
+  login: (email: string, password: string, subdomain?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -91,7 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = async (email: string, password: string) => {
+  // 🚀 PERBAIKAN UTAMA: Mengaktifkan parameter ketiga (subdomain) di implementasi fungsi
+  const login = async (email: string, password: string, subdomain?: string) => {
     if (isDemoLogin(email, password)) {
       const token = DUMMY_AUTH_TOKEN;
       setAuthToken(token);
@@ -106,7 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const res = await api.post('/auth/login', { email, password });
+    // 🚀 Ikut sertakan properti subdomain ke dalam request body POST API backend
+    const res = await api.post('/auth/login', { email, password, subdomain });
     setAuthToken(res.data.access_token);
     setUser(res.data.user);
   };
