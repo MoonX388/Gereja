@@ -10,15 +10,14 @@ export class Keluarga {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({nullable: true})
-  userId!: number;
-
   @Column({ type: 'varchar', unique: true })
   noKK!: string;
 
   @Column({ type: 'varchar' })
   kepala!: string;
 
+  @Column({ type: 'varchar' })
+  namaaggota!: string;
   @Column({ type: 'text', nullable: true })
   alamat?: string;
 

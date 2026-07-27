@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Notifikasi } from '../entity/notifikasi.entity';
-import { data } from '../entity/data.entity';
+import { User } from '../entity/user.entity';
 import { NotifikasiService } from './notifikasi.service';
 import { NotifikasiController } from './notifikasi.controller';
 import { BotModule } from '../bot/bot.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Notifikasi, data]), // tambahkan data
+    TypeOrmModule.forFeature([Notifikasi, User]), // tambahkan User
     BotModule,
   ],
   controllers: [NotifikasiController],

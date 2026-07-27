@@ -9,10 +9,7 @@ import {
 export class Jadwal {
   @PrimaryGeneratedColumn()
   id!: number;
-
-  @Column({nullable: true})
-  userId!: number;
-
+  
   @Column({ type: 'varchar' })
   nama!: string;
 

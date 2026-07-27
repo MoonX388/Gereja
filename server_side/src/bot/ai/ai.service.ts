@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { data } from '../../entity/data.entity';
+import { Jemaat } from '../../entity/jemaat.entity';
 
 @Injectable()
 export class AiService {
   private generator: any;
 
   constructor(
-    @InjectRepository(data)
-    private readonly dataRepository: Repository<data>,
+    @InjectRepository(Jemaat)
+    private readonly jemaatRepository: Repository<Jemaat>,
     private readonly configService: ConfigService, // 👈 inject
   ) {}
 
@@ -29,13 +29,13 @@ export class AiService {
     }
 
     // --- Sisa kode pencarian database di bawah ini tetap sama seperti kemarin ---
-    const userGereja = await this.dataRepository.findOne({
+    const userGereja = await this.jemaatRepository.findOne({
       where: { telepon: nomorHP },
     });
 
     let infoUser = `User ini belum terdaftar di database Jemaat resmi.`;
     if (userGereja) {
-      infoUser = `User terdaftar di database Jemaat. Nama: ${userGereja.nama}, Role: ${userGereja.role}, Alamat: ${userGereja.alamat || 'Belum diisi'}.`;
+      infoUser = `User terdaftar di database Jemaat. Nama: ${userGereja.nama}, Alamat: ${userGereja.alamat || 'Belum diisi'}.`;
     }
 
     const pembatas = '===JAWABAN_AI===';

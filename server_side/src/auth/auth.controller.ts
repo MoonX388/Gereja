@@ -22,13 +22,21 @@ export class AuthController {
 
   @Post('login')
   login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
+    // 🚀 Meneruskan email, password, dan subdomain ke service
+    return this.authService.login(dto.email, dto.password, dto.subdomain);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('profile')
-  getProfile(@Request() req) {
+  async getProfile(@Request() req) {
     const { password, ...user } = req.user;
-    return user;
+    
+    // Kirim informasi subdomain gereja induk untuk validasi layout frontend
+    const churchSubdomain = await this.authService.getChurchSubdomain(user.userId);
+    
+    return {
+      ...user,
+      churchSubdomain,
+    };
   }
 }

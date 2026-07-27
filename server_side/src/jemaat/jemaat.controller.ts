@@ -12,7 +12,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { JemaatService } from './jemaat.service';
-import { data as Jemaat } from '../entity/data.entity';
+import { Jemaat } from '../entity/jemaat.entity';
 import { AdminGuard } from '../auth/admin.guard';
 import { AuthGuard } from '@nestjs/passport';
 

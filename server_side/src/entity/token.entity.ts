@@ -11,9 +11,6 @@ export class TokenEntity {
   @PrimaryGeneratedColumn()
   id!: number; // ⬅️ tambahkan !
 
-  @Column({nullable: true})
-  userId!: number;
-
   @Column({ type: 'text' })
   token!: string; // ⬅️ tambahkan !
 

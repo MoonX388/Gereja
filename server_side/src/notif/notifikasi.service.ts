@@ -1,8 +1,9 @@
+// src/notif/notifikasi.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notifikasi } from '../entity/notifikasi.entity';
-import { data as User } from '../entity/data.entity';
+import { User } from '../entity/user.entity';
 import { BotService } from '../bot/bot.service';
 
 @Injectable()
@@ -15,17 +16,14 @@ export class NotifikasiService {
     private botService: BotService,
   ) {}
 
-  // ✅ Ambil semua notifikasi
   async findAll(): Promise<Notifikasi[]> {
     return this.notifRepo.find({ order: { id: 'DESC' } });
   }
 
-  // ✅ Buat notifikasi dan kirim broadcast
   async create(data: Partial<Notifikasi>): Promise<Notifikasi> {
     const item = this.notifRepo.create(data);
     const saved = await this.notifRepo.save(item);
 
-    // Kirim broadcast jika ada pesan dan target
     if (data.pesan && data.target) {
       await this.sendBroadcast(data.target, data.pesan, data.judul);
     }
@@ -33,12 +31,10 @@ export class NotifikasiService {
     return saved;
   }
 
-  // ✅ Update (hanya satu)
   async update(id: number, data: Partial<Notifikasi>): Promise<void> {
     await this.notifRepo.update(id, data);
   }
 
-  // ✅ Delete (hanya satu)
   async remove(id: number): Promise<void> {
     await this.notifRepo.delete(id);
   }
@@ -47,24 +43,29 @@ export class NotifikasiService {
   private async sendBroadcast(target: string, message: string, title?: string) {
     let users: User[] = [];
 
-    // Gunakan select dengan object { telepon: true } agar TypeORM tidak protes
+    // 🚀 PERBAIKAN UTAMA: Tambahkan relations: { jemaat: true } 
+    // agar kita bisa mengakses nomor telepon dan status dari tabel profil Jemaat.
+    
     if (target === 'Semua Jemaat') {
-      users = await this.userRepo.find({ select: { telepon: true } });
+      users = await this.userRepo.find({
+        relations: { jemaat: true },
+      });
     } else if (target === 'Pelayan') {
       users = await this.userRepo.find({
         where: { role: 'pelayan' },
-        select: { telepon: true },
+        relations: { jemaat: true },
       });
     } else if (target === 'Jemaat Aktif') {
       users = await this.userRepo.find({
-        where: { status: 'Aktif' },
-        select: { telepon: true },
+        // Karena status ada di tabel jemaat, kita filter dari relasinya
+        where: { jemaat: { status: 'Aktif' } },
+        relations: { jemaat: true },
       });
     }
 
-    // Filter nomor HP yang valid
+    // 🚀 PERBAIKAN: Ambil no telepon lewat objek jemaat (u.jemaat?.telepon)
     const phoneNumbers = users
-      .map((u) => u.telepon)
+      .map((u) => u.jemaat?.telepon)
       .filter((tel): tel is string => !!tel && tel.length > 0);
 
     if (phoneNumbers.length === 0) {

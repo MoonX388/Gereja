@@ -1,17 +1,10 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('pelayan')
 export class Pelayan {
   @PrimaryGeneratedColumn()
   id!: number;
-
-  @Column({nullable: true})
-  userId!: number;
 
   @Column({ type: 'varchar' })
   nama!: string;
@@ -23,8 +16,15 @@ export class Pelayan {
   departemen!: string;
 
   @Column({ type: 'varchar', default: 'Aktif' })
-  status!: string; // Aktif / Tidak Aktif
+  status!: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp', name: 'createdAt' })
   createdAt!: Date;
+
+  @Column({ type: 'integer', nullable: true, name: 'userId' })
+  userId!: number | null;
+
+  @ManyToOne(() => User, (user) => user.pelayans, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user!: User | null;
 }

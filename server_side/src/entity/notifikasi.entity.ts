@@ -10,9 +10,6 @@ export class Notifikasi {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({nullable: true})
-  userId!: number;
-
   @Column({ type: 'varchar' })
   judul!: string;
 

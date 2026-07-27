@@ -4,11 +4,13 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JemaatController } from './jemaat.controller';
 import { JemaatService } from './jemaat.service';
-import { data as Jemaat } from '../entity/data.entity';
+import { Jemaat } from '../entity/jemaat.entity';
+import { User } from '../entity/user.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Jemaat]), // 🚀 Hanya menggunakan entity data
+    TypeOrmModule.forFeature([User]), // 🚀 Injeksi entity User agar bisa digunakan di service
   ],
   controllers: [JemaatController],
   providers: [JemaatService],
