@@ -8,14 +8,13 @@ interface User {
   email: string;
   role: string;
   username: string;
-  isDemo?: boolean;
+  isDemo?: boolean; // Pastikan isDemo ada di interface
   namaGereja?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  // 🚀 PERBAIKAN: Menambahkan parameter subdomain pada signature interface
   login: (email: string, password: string, subdomain?: string) => Promise<void>;
   logout: () => void;
 }
@@ -42,20 +41,16 @@ const clearAuthToken = () => {
   document.cookie = 'auth_token=; path=/; max-age=0';
 };
 
+// --- LOGIKA DEMO LOKAL ---
 const DUMMY_AUTH_TOKEN = 'demo_token';
-const demoLoginIdentifiers = [
-  'admin',
-  'admin@gereja.local',
-  'user demo',
-  'demo',
-  'demo@gereja.local',
-];
+const demoLoginIdentifiers = ['admin', 'admin@gereja.local', 'demo'];
 
 const isDemoLogin = (identifier: string, password: string) => {
   return demoLoginIdentifiers.includes(identifier.toLowerCase().trim()) && password === 'admin123';
 };
 
 const isDummyToken = (token?: string) => token === DUMMY_AUTH_TOKEN;
+// -------------------------
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -72,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // 🚀 BYPASS API: Jika tokennya 'demo_token', langsung buat user dummy
     if (isDummyToken(token)) {
       setUser({
         id: 1,
@@ -79,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: 'admin@gereja.local',
         role: 'admin',
         username: 'admin',
-        isDemo: true,
+        isDemo: true, // Tanda bahwa ini akun offline
       });
       setLoading(false);
       return;
@@ -92,11 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // 🚀 PERBAIKAN UTAMA: Mengaktifkan parameter ketiga (subdomain) di implementasi fungsi
   const login = async (email: string, password: string, subdomain?: string) => {
+    // 🚀 BYPASS API: Jika email & password cocok dengan demo, jangan panggil API
     if (isDemoLogin(email, password)) {
-      const token = DUMMY_AUTH_TOKEN;
-      setAuthToken(token);
+      setAuthToken(DUMMY_AUTH_TOKEN);
       setUser({
         id: 1,
         nama: 'Admin Demo',
@@ -108,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // 🚀 Ikut sertakan properti subdomain ke dalam request body POST API backend
+    // Jika bukan demo, tembak API backend
     const res = await api.post('/auth/login', { email, password, subdomain });
     setAuthToken(res.data.access_token);
     setUser(res.data.user);
