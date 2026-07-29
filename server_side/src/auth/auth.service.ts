@@ -44,26 +44,32 @@ export class AuthService {
         throw new UnauthorizedException('Gereja dengan subdomain ini tidak terdaftar.');
       }
 
-      // 🚀 PERBAIKAN: Gunakan jemaatId, bukan userId
-      if (user.jemaatId !== church.id) {
+      // 🚀 PERBAIKAN UTAMA: Cek apakah dia Pemilik ATAU Staf Jemaat
+      const isOwner = user.id === church.id; // Dia adalah pemilik gereja itu sendiri
+      const isStaff = user.jemaatId === church.id; // Dia adalah staf/jemaat di bawah gereja itu
+
+      // Jika role-nya super_admin, izinkan juga (opsional untuk keamanan tambahan)
+      if (!isOwner && !isStaff && user.role !== 'super_admin') {
         throw new UnauthorizedException('Akun Anda tidak terdaftar di lingkup gereja subdomain ini.');
       }
     }
 
-    // 🚀 PERBAIKAN: Gunakan jemaatId
-    const currentChurch = user.jemaatId ? await this.usersService.findChurchById(user.jemaatId) : null;
-    return this.generateToken(user, currentChurch?.subdomain || '');
+    // 🚀 PERBAIKAN REFERENSI ID: 
+    // Jika dia Staf, ambil gereja dari `jemaatId`. Jika dia Owner, ambil dari `id` dia sendiri.
+    const referenceChurchId = user.jemaatId ? user.jemaatId : user.id;
+    const currentChurch = await this.usersService.findChurchById(referenceChurchId);
+    
+    return this.generateToken(user, currentChurch?.subdomain || '', referenceChurchId);
   }
-
   async getChurchSubdomain(userId: number): Promise<string> {
     if (!userId) return '';
     const church = await this.usersService.findChurchById(userId);
     return church?.subdomain || '';
   }
 
-  private generateToken(user: any, churchSubdomain: string = '') {
-    // 🚀 PERBAIKAN: Ganti userId menjadi jemaatId untuk payload
-    const payload = { sub: user.id, email: user.email, role: user.role, userId: user.jemaatId };
+  private generateToken(user: any, churchSubdomain: string = '', referenceChurchId: number) {
+    // 🚀 PERBAIKAN PAYLOAD: userId di token sekarang menggunakan ID Gereja yang tepat
+    const payload = { sub: user.id, email: user.email, role: user.role, userId: referenceChurchId };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
