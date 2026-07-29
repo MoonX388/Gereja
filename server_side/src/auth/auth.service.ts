@@ -31,33 +31,63 @@ export class AuthService {
   }
 
   async login(emailOrUsername: string, password: string, subdomain?: string) {
+    console.log('=================================');
+    console.log('🔍 INFO LOGIN MASUK:');
+    console.log('Email/User:', emailOrUsername);
+    console.log('Subdomain yg dikirim:', subdomain);
+    console.log('=================================');
+
     let user = await this.usersService.findByEmail(emailOrUsername);
+    console.log('1. Cek DB by Email:', user ? '✅ KETEMU (ID: ' + user.id + ')' : '❌ TIDAK KETEMU');
 
     if (!user) {
       user = await this.usersService.findByUsername(emailOrUsername);
+      console.log('2. Cek DB by Username:', user ? '✅ KETEMU' : '❌ TIDAK KETEMU');
     }
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.log('🚨 ERROR: Akun benar-benar tidak ada di database!');
       throw new UnauthorizedException('Email/Username atau password salah');
     }
 
-    // 🛡️ PAGAR MULTI-TENANT ISOLATION
+    // Cek Password
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    console.log('3. Cek Password bcrypt:', isPasswordMatch ? '✅ COCOK' : '❌ SALAH PASSWORD');
+
+    if (!isPasswordMatch) {
+      console.log('🚨 ERROR: Password salah saat di-compare bcrypt!');
+      throw new UnauthorizedException('Email/Username atau password salah');
+    }
+
+    // Pagar Subdomain
     if (subdomain && subdomain !== '') {
       const church = await this.usersService.findChurchBySubdomain(subdomain);
+      console.log('4. Cari Gereja by Subdomain:', church ? '✅ KETEMU (ID: ' + church.id + ')' : '❌ TIDAK KETEMU');
       
       if (!church) {
+        console.log('🚨 ERROR: Subdomain tidak ada di database');
         throw new UnauthorizedException('Gereja dengan subdomain ini tidak terdaftar.');
       }
 
-      // 🚀 PERBAIKAN UTAMA: Cek apakah dia Pemilik ATAU Staf Jemaat
-      const isOwner = user.id === church.id; // Dia adalah pemilik gereja itu sendiri
-      const isStaff = user.jemaatId === church.id; // Dia adalah staf/jemaat di bawah gereja itu
+      const isOwner = user.id === church.id;
+      const isStaff = user.jemaatId === church.id;
+      
+      console.log('5. Apakah dia Owner/Super Admin?', isOwner);
+      console.log('6. Apakah dia Staff?', isStaff);
 
-      // Jika role-nya super_admin, izinkan juga (opsional untuk keamanan tambahan)
       if (!isOwner && !isStaff && user.role !== 'super_admin') {
+        console.log('🚨 ERROR: Dia bukan owner dan bukan staff di gereja ini!');
         throw new UnauthorizedException('Akun Anda tidak terdaftar di lingkup gereja subdomain ini.');
       }
     }
+
+    console.log('🎉 STATUS: LOGIN BERHASIL DIIZINKAN!');
+    
+    const referenceChurchId = user.jemaatId ? user.jemaatId : user.id;
+    const currentChurch = await this.usersService.findChurchById(referenceChurchId);
+    
+    return this.generateToken(user, currentChurch?.subdomain || '', referenceChurchId);
+  }
 
     // 🚀 PERBAIKAN REFERENSI ID: 
     // Jika dia Staf, ambil gereja dari `jemaatId`. Jika dia Owner, ambil dari `id` dia sendiri.
