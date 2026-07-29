@@ -22,7 +22,12 @@ export class AuthService {
       ...dto,
       password: hashedPassword,
     });
-    return this.generateToken(user);
+
+    // 🚀 PERBAIKAN: Tentukan referenceChurchId dan panggil generateToken dengan 3 parameter
+    const referenceChurchId = user.jemaatId ? user.jemaatId : user.id;
+    const churchSubdomain = user.subdomain || ''; // Ambil subdomain jika ada di DTO saat register
+
+    return this.generateToken(user, churchSubdomain, referenceChurchId);
   }
 
   async login(emailOrUsername: string, password: string, subdomain?: string) {
