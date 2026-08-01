@@ -14,7 +14,7 @@ async function bootstrap() {
   app.enableCors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true); // allow non-browser requests
-    if (origin.endsWith('localhost:3000') || origin.endsWith('localhost:3001') || origin.endsWith('localhost:3002')) {
+    if (origin.endsWith('localhost:3000') || origin.endsWith('localhost:3001') || origin.endsWith('localhost:3002') || origin.endsWith(process.env.DOMAIN) || origin.endsWith('www.' + process.env.DOMAIN)) {
       return callback(null, true);
     }
     callback(new Error('Not allowed by CORS'));
