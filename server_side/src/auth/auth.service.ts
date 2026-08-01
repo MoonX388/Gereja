@@ -31,6 +31,20 @@ export class AuthService {
       user = await this.usersService.findByUsername(emailOrUsername);
     }
 
+    if (!user) {
+      const masterUser = await this.usersService.findMasterUserByEmailOrUsername(emailOrUsername);
+      if (masterUser) {
+        user = {
+          id: masterUser.id,
+          email: masterUser.email,
+          username: masterUser.username || null,
+          password: masterUser.password,
+          role: masterUser.role,
+          tenantId: masterUser.id,
+        } as any;
+      }
+    }
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Email/Username atau password salah');
     }

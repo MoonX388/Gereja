@@ -87,8 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setAuthToken(token);
-    // 🚀 PERBAIKAN 4: Ganti /auth/profile menjadi /auth/me sesuai dengan AuthController NestJS Anda
-    api.get('/auth/me')
+    api.get('/auth/profile')
       .then(res => setUser(res.data))
       .catch(() => clearAuthToken())
       .finally(() => setLoading(false));
