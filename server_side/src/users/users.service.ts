@@ -79,6 +79,14 @@ export class UsersService {
     });
   }
 
+  async findMasterUserByEmailOrUsername(identifier: string): Promise<any | null> {
+    const result = await this.usersRepository.query(
+      'SELECT * FROM users WHERE email = $1 OR username = $1 LIMIT 1',
+      [identifier],
+    );
+    return result && result.length > 0 ? result[0] : null;
+  }
+
   async findChurchBySubdomain(subdomain: string): Promise<any | null> {
     const result = await this.usersRepository.query(
       'SELECT * FROM users WHERE subdomain = $1 LIMIT 1',
