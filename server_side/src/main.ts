@@ -10,19 +10,29 @@ async function bootstrap() {
   // ClassSerializerInterceptor butuh Reflector (Tetap aman)
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  const corsOrigin = '*';
   app.enableCors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow non-browser requests
-    if (origin.endsWith('localhost:3000') || origin.endsWith('localhost:3001') || origin.endsWith('localhost:3002') || origin.endsWith(process.env.DOMAIN) || origin.endsWith('www.' + process.env.DOMAIN)) {
+    if (!origin) return callback(null, true); // untuk request non-browser
+
+    // ✅ Izinkan semua subdomain *.gerejapintar.id
+    if (
+      origin.endsWith('.gerejapintar.id') || 
+      origin === 'https://gerejapintar.id' || 
+      origin === 'http://localhost:3000' || 
+      origin === 'http://localhost:3001' || 
+      origin === 'http://localhost:3002'
+    ) {
       return callback(null, true);
     }
-    callback(new Error('Not allowed by CORS'));
+
+    // ❌ Tolak domain lain
+    callback(new Error(`CORS blocked: ${origin}`));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 });
+
 
 
   // 🚀 PERBAIKAN 1: Dahulukan 'process.env.PORT' bawaan Railway, baru fallback ke ConfigService
