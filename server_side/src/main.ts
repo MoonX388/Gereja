@@ -39,7 +39,7 @@ async function bootstrap() {
   const port = process.env.PORT || configService.get<number>('SERVER_PORT') || 3001;
 
   // 🚀 PERBAIKAN 2: Wajib tambahkan '0.0.0.0' agar jaringan Railway bisa menembus masuk
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   
   console.log(`Server running successfully on port ${port}`);
 }
