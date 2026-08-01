@@ -8,14 +8,16 @@ interface User {
   email: string;
   role: string;
   username: string;
-  isDemo?: boolean; // Pastikan isDemo ada di interface
+  isDemo?: boolean;
   namaGereja?: string;
+  subdomain?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, subdomain?: string) => Promise<void>;
+  // 🚀 PERBAIKAN 1: Sesuaikan parameter agar menerima Objek (sama seperti di LoginPage)
+  login: (credentials: { username: string; password: string; subdomain?: string }) => Promise<void>;
   logout: () => void;
 }
 
@@ -41,16 +43,20 @@ const clearAuthToken = () => {
   document.cookie = 'auth_token=; path=/; max-age=0';
 };
 
-// --- LOGIKA DEMO LOKAL ---
 const DUMMY_AUTH_TOKEN = 'demo_token';
-const demoLoginIdentifiers = ['admin', 'admin@gereja.local', 'demo'];
+const demoLoginIdentifiers = [
+  'admin',
+  'admin@gereja.local',
+  'user demo',
+  'demo',
+  'demo@gereja.local',
+];
 
 const isDemoLogin = (identifier: string, password: string) => {
   return demoLoginIdentifiers.includes(identifier.toLowerCase().trim()) && password === 'admin123';
 };
 
 const isDummyToken = (token?: string) => token === DUMMY_AUTH_TOKEN;
-// -------------------------
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -67,7 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // 🚀 BYPASS API: Jika tokennya 'demo_token', langsung buat user dummy
     if (isDummyToken(token)) {
       setUser({
         id: 1,
@@ -75,23 +80,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: 'admin@gereja.local',
         role: 'admin',
         username: 'admin',
-        isDemo: true, // Tanda bahwa ini akun offline
+        isDemo: true,
       });
       setLoading(false);
       return;
     }
 
     setAuthToken(token);
-    api.get('/auth/profile')
+    // 🚀 PERBAIKAN 4: Ganti /auth/profile menjadi /auth/me sesuai dengan AuthController NestJS Anda
+    api.get('/auth/me')
       .then(res => setUser(res.data))
       .catch(() => clearAuthToken())
       .finally(() => setLoading(false));
   }, []);
 
-  const login = async (email: string, password: string, subdomain?: string) => {
-    // 🚀 BYPASS API: Jika email & password cocok dengan demo, jangan panggil API
-    if (isDemoLogin(email, password)) {
-      setAuthToken(DUMMY_AUTH_TOKEN);
+  // 🚀 PERBAIKAN BERSAMA: Ekstrak objek credentials
+  const login = async (credentials: { username: string; password: string; subdomain?: string }) => {
+    const { username, password, subdomain } = credentials;
+
+    if (isDemoLogin(username, password)) {
+      const token = DUMMY_AUTH_TOKEN;
+      setAuthToken(token);
       setUser({
         id: 1,
         nama: 'Admin Demo',
@@ -103,10 +112,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Jika bukan demo, tembak API backend
-    const res = await api.post('/auth/login', { email, password, subdomain });
-    setAuthToken(res.data.access_token);
+    // 🚀 PERBAIKAN 2: Kirim key 'username', bukan 'email' agar dibaca oleh NestJS
+    const res = await api.post('/auth/login', { username, password, subdomain });
+    
+    // 🚀 PERBAIKAN 3: Backend melempar 'token', BUKAN 'access_token'
+    setAuthToken(res.data.token); 
     setUser(res.data.user);
+    
+    // Kembalikan user agar LoginPage bisa melakukan pengecekan role & redirect
+    return res.data.user; 
   };
 
   const logout = () => {

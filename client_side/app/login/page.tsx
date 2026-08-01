@@ -32,7 +32,11 @@ export default function LoginPage() {
       }
 
       // 🚀 2. OPER VARIABEL SUBDOMAIN KE FUNGSI LOGIN DI CONTEXT
-      await login(identifier, password, currentSubdomain);
+      await login({ 
+        username: identifier, 
+        password: password, 
+        subdomain: currentSubdomain 
+      });
       
       // Lolos seleksi, masuk ke dashboard admin internal cabang
       router.push("/admin");
