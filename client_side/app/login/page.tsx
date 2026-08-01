@@ -42,7 +42,14 @@ export default function LoginPage() {
       router.push("/admin");
     } catch (error: unknown) {
       const typedError = error as { response?: { data?: { message?: string } } };
-      showToast(typedError.response?.data?.message ?? 'Login gagal, periksa akun Anda.', 'error');
+      const message = typedError.response?.data?.message || 'Login gagal, periksa akun Anda.';
+
+      if (message.includes('Gereja dengan subdomain ini tidak terdaftar')) {
+        router.push('/error/404');
+        return;
+      }
+
+      showToast(message, 'error');
       setLoading(false);
     }
   };
