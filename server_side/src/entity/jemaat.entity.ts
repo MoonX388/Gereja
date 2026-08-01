@@ -48,6 +48,9 @@ export class Jemaat {
   @Column({ type: 'varchar' })
   status!: string; 
 
+  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
+  tenantId!: number | null;
+
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt!: Date;
 

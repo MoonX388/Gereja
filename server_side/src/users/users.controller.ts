@@ -28,27 +28,27 @@ export class UsersController {
 
   // 🆕 Ambil SEMUA data jemaat untuk tabel dashboard
   @Get()
-  async getAllUsers() {
-    return this.usersService.findAll();
+  async getAllUsers(@Request() req: any) {
+    return this.usersService.findAll(req.user.tenantId);
   }
 
   // 🆕 Tambah jemaat baru
   @Post()
-  async createUser(@Body() body: any) {
-    return this.usersService.create(body);
+  async createUser(@Body() body: any, @Request() req: any) {
+    return this.usersService.create({ ...body, tenantId: req.user.tenantId });
   }
 
   // 🆕 Update biodata jemaat ATAU ganti JABATAN (role)
   @Put(':id')
-  async updateUser(@Param('id') id: number, @Body() body: any) {
-    await this.usersService.update(id, body);
+  async updateUser(@Param('id') id: number, @Body() body: any, @Request() req: any) {
+    await this.usersService.update(id, body, req.user.tenantId);
     return { message: 'Data jemaat diperbarui' };
   }
 
   // 🆕 Hapus jemaat
   @Delete(':id')
-  async removeUser(@Param('id') id: number) {
-    await this.usersService.remove(id);
+  async removeUser(@Param('id') id: number, @Request() req: any) {
+    await this.usersService.remove(id, req.user.tenantId);
     return { message: 'Jemaat berhasil dihapus' };
   }
 }

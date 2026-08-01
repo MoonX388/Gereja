@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Keluarga } from '../entity/keluarga.entity';
@@ -10,20 +10,27 @@ export class KeluargaService {
     private keluargaRepo: Repository<Keluarga>,
   ) {}
 
-  async findAll(): Promise<Keluarga[]> {
-    return this.keluargaRepo.find({ order: { id: 'DESC' } });
+  async findAll(tenantId: number): Promise<Keluarga[]> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    return this.keluargaRepo.find({
+      where: { tenantId },
+      order: { id: 'DESC' },
+    });
   }
 
-  async create(data: Partial<Keluarga>): Promise<Keluarga> {
-    const item = this.keluargaRepo.create(data);
+  async create(data: Partial<Keluarga>, tenantId: number): Promise<Keluarga> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    const item = this.keluargaRepo.create({ ...data, tenantId });
     return this.keluargaRepo.save(item);
   }
 
-  async update(id: number, data: Partial<Keluarga>): Promise<void> {
-    await this.keluargaRepo.update(id, data);
+  async update(id: number, data: Partial<Keluarga>, tenantId: number): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.keluargaRepo.update({ id, tenantId }, data);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.keluargaRepo.delete(id);
+  async remove(id: number, tenantId: number): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.keluargaRepo.delete({ id, tenantId });
   }
 }

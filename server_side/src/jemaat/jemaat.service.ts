@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Jemaat } from '../entity/jemaat.entity';
@@ -15,72 +15,80 @@ export class JemaatService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async getDashboardData(subownerId: number) {
-    // 1. Mengintip langsung ke tabel 'users' menggunakan Raw Query
+  private validateTenant(tenantId: number) {
+    if (!tenantId) {
+      throw new UnauthorizedException('Tenant tidak valid');
+    }
+  }
+
+  async getDashboardData(tenantId: number) {
+    this.validateTenant(tenantId);
+    // 1. Ambil informasi tenant/gereja master dari tabel users
     const rawUser = await this.jemaatRepository.query(
       `SELECT id, "namaGereja", "namaAdmin", email FROM users WHERE id = $1`,
-      [subownerId]
+      [tenantId]
     );
-    const subownerInfo = rawUser[0] || null;
+    const tenantInfo = rawUser[0] || null;
 
-    // 2. Ambil jemaat beserta data akun (user) miliknya
+    // 2. Ambil jemaat yang terkait dengan tenant ini
     const daftarJemaat = await this.jemaatRepository.find({
-      relations: { user: true }, // 🚀 Menggunakan format object boolean
+      where: { tenantId },
+      relations: { user: true },
       order: { id: 'DESC' },
     });
 
     return {
-      subowner: subownerInfo,
+      tenant: tenantInfo,
       jemaat: daftarJemaat,
     };
   }
 
-  async findAll(subownerId: number): Promise<Jemaat[]> {
+  async findAll(tenantId: number): Promise<Jemaat[]> {
+    this.validateTenant(tenantId);
     return this.jemaatRepository.find({
-      relations: { user: true }, // 🚀 Menggunakan format object boolean
+      where: { tenantId },
+      relations: { user: true },
       order: { id: 'DESC' },
     });
   }
 
-  async create(dto: any, subownerId: number): Promise<Jemaat> {
-    // Pisahkan data profil Jemaat dengan data kredensial User
-    const { email, password, role, ...dataJemaat } = dto;
+  async create(dto: any, tenantId: number): Promise<Jemaat> {
+    this.validateTenant(tenantId);
+    const jenisKelaminValue = dto.jenisKelamin || dto.jenis_kelamin || 'Laki-laki';
+    const { email, password, role, jenis_kelamin, jenisKelamin, ...dataJemaat } = dto;
 
-    // 1. Simpan profil Jemaat terlebih dahulu
     const jemaatBaru = this.jemaatRepository.create({
       ...dataJemaat,
-      userId: subownerId,
-    } as Partial<Jemaat>); // 🚀 Penegasan tipe sebagai satu objek parsial
+      jenisKelamin: jenisKelaminValue,
+      tenantId,
+    } as Partial<Jemaat>);
 
-    // 🚀 Penegasan tipe hasil save sebagai entitas tunggal Jemaat
     const savedJemaat = await this.jemaatRepository.save(jemaatBaru) as Jemaat;
 
-    // 2. Siapkan data akun login (User)
-    const finalEmail = email || `jemaat_${Date.now()}_${Math.floor(Math.random() * 100000)}_sub_${subownerId}@gereja.local`;
+    const finalEmail = email || `jemaat_${Date.now()}_${Math.floor(Math.random() * 100000)}_tenant_${tenantId}@gereja.local`;
     const finalPassword = password || `no_login_access_${Math.random()}_${Date.now()}`;
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
-    // 3. Simpan akun User dan kaitkan dengan jemaatId yang baru dibuat
     const newUser = this.userRepository.create({
       email: finalEmail,
       password: hashedPassword,
       role: role || 'jemaat',
-      jemaatId: savedJemaat.id, 
+      jemaatId: savedJemaat.id,
+      tenantId,
     });
     await this.userRepository.save(newUser);
 
     return savedJemaat;
   }
 
-  async update(id: number, dto: any, subownerId: number): Promise<void> {
+  async update(id: number, dto: any, tenantId: number): Promise<void> {
+    this.validateTenant(tenantId);
     const { email, password, role, ...dataJemaat } = dto;
 
-    // 1. Update tabel Jemaat jika ada data profil yang berubah
     if (Object.keys(dataJemaat).length > 0) {
-      await this.jemaatRepository.update({ id }, dataJemaat);
+      await this.jemaatRepository.update({ id, tenantId }, dataJemaat);
     }
 
-    // 2. Update tabel User jika ada perubahan kredensial
     if (email || password || role) {
       const updateDataUser: any = {};
       
@@ -90,16 +98,13 @@ export class JemaatService {
         updateDataUser.password = await bcrypt.hash(password, 10);
       }
       
-      // Update berdasarkan Foreign Key jemaatId
-      await this.userRepository.update({ jemaatId: id }, updateDataUser);
+      await this.userRepository.update({ jemaatId: id, tenantId }, updateDataUser);
     }
   }
 
-  async remove(id: number, subownerId: number): Promise<void> {
-    // 🚀 Hapus dari tabel anak (User) dulu agar tidak terjadi konflik Foreign Key
-    await this.userRepository.delete({ jemaatId: id });
-    
-    // Baru hapus dari tabel induk (Jemaat)
-    await this.jemaatRepository.delete({ id });
+  async remove(id: number, tenantId: number): Promise<void> {
+    this.validateTenant(tenantId);
+    await this.userRepository.delete({ jemaatId: id, tenantId });
+    await this.jemaatRepository.delete({ id, tenantId });
   }
 }

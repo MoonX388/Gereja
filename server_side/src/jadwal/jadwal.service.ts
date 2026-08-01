@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Jadwal } from '../entity/jadwal.entity';
@@ -10,20 +10,27 @@ export class JadwalService {
     private jadwalRepo: Repository<Jadwal>,
   ) {}
 
-  async findAll(): Promise<Jadwal[]> {
-    return this.jadwalRepo.find({ order: { tanggal: 'DESC' } });
+  async findAll(tenantId: number): Promise<Jadwal[]> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    return this.jadwalRepo.find({
+      where: { tenantId },
+      order: { tanggal: 'DESC' },
+    });
   }
 
-  async create(data: Partial<Jadwal>): Promise<Jadwal> {
-    const item = this.jadwalRepo.create(data);
+  async create(data: Partial<Jadwal>, tenantId: number): Promise<Jadwal> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    const item = this.jadwalRepo.create({ ...data, tenantId });
     return this.jadwalRepo.save(item);
   }
 
-  async update(id: number, data: Partial<Jadwal>): Promise<void> {
-    await this.jadwalRepo.update(id, data);
+  async update(id: number, data: Partial<Jadwal>, tenantId: number): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.jadwalRepo.update({ id, tenantId }, data);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.jadwalRepo.delete(id);
+  async remove(id: number, tenantId: number): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.jadwalRepo.delete({ id, tenantId });
   }
 }

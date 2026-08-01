@@ -5,6 +5,7 @@ import {
   UseGuards,
   Get,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -22,8 +23,15 @@ export class AuthController {
 
   @Post('login')
   login(@Body() dto: LoginDto) {
-    // 🚀 Meneruskan email, password, dan subdomain ke service
-    return this.authService.login(dto.email, dto.password, dto.subdomain);
+    // 🚀 PERBAIKAN: Tangkap username dari frontend, atau gunakan email sebagai cadangan
+    const identifier = dto.username || dto.email;
+    
+    if (!identifier) {
+      throw new BadRequestException('Username atau Email wajib diisi');
+    }
+
+    // Teruskan ke Auth Service
+    return this.authService.login(identifier, dto.password, dto.subdomain);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -32,7 +40,7 @@ export class AuthController {
     const { password, ...user } = req.user;
     
     // Kirim informasi subdomain gereja induk untuk validasi layout frontend
-    const churchSubdomain = await this.authService.getChurchSubdomain(user.userId);
+    const churchSubdomain = await this.authService.getChurchSubdomain(user.tenantId);
     
     return {
       ...user,

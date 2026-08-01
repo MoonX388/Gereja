@@ -16,31 +16,34 @@ export class NotifikasiService {
     private botService: BotService,
   ) {}
 
-  async findAll(): Promise<Notifikasi[]> {
-    return this.notifRepo.find({ order: { id: 'DESC' } });
+  async findAll(tenantId: number): Promise<Notifikasi[]> {
+    return this.notifRepo.find({
+      where: { tenantId },
+      order: { id: 'DESC' },
+    });
   }
 
-  async create(data: Partial<Notifikasi>): Promise<Notifikasi> {
-    const item = this.notifRepo.create(data);
+  async create(data: Partial<Notifikasi>, tenantId: number): Promise<Notifikasi> {
+    const item = this.notifRepo.create({ ...data, tenantId });
     const saved = await this.notifRepo.save(item);
 
     if (data.pesan && data.target) {
-      await this.sendBroadcast(data.target, data.pesan, data.judul);
+      await this.sendBroadcast(data.target, data.pesan, data.judul, tenantId);
     }
 
     return saved;
   }
 
-  async update(id: number, data: Partial<Notifikasi>): Promise<void> {
-    await this.notifRepo.update(id, data);
+  async update(id: number, data: Partial<Notifikasi>, tenantId: number): Promise<void> {
+    await this.notifRepo.update({ id, tenantId }, data);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.notifRepo.delete(id);
+  async remove(id: number, tenantId: number): Promise<void> {
+    await this.notifRepo.delete({ id, tenantId });
   }
 
   // ---------- FUNGSI BROADCAST ----------
-  private async sendBroadcast(target: string, message: string, title?: string) {
+  private async sendBroadcast(target: string, message: string, title?: string, tenantId?: number) {
     let users: User[] = [];
 
     // 🚀 PERBAIKAN UTAMA: Tambahkan relations: { jemaat: true } 
@@ -48,17 +51,17 @@ export class NotifikasiService {
     
     if (target === 'Semua Jemaat') {
       users = await this.userRepo.find({
+        where: { tenantId },
         relations: { jemaat: true },
       });
     } else if (target === 'Pelayan') {
       users = await this.userRepo.find({
-        where: { role: 'pelayan' },
+        where: { role: 'pelayan', tenantId },
         relations: { jemaat: true },
       });
     } else if (target === 'Jemaat Aktif') {
       users = await this.userRepo.find({
-        // Karena status ada di tabel jemaat, kita filter dari relasinya
-        where: { jemaat: { status: 'Aktif' } },
+        where: { tenantId, jemaat: { status: 'Aktif' } },
         relations: { jemaat: true },
       });
     }

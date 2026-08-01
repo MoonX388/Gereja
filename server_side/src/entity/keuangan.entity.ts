@@ -10,6 +10,9 @@ export class Keuangan {
   @PrimaryGeneratedColumn()
   id!: number; // ✅ tambahkan !
 
+  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
+  tenantId!: number | null;
+
   @Column({ type: 'varchar' })
   jenis!: 'masuk' | 'keluar'; // ✅ tambahkan !
 

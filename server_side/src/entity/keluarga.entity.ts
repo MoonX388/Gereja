@@ -13,6 +13,9 @@ export class Keluarga {
   @Column({ type: 'varchar', unique: true })
   noKK!: string;
 
+  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
+  tenantId!: number | null;
+
   @Column({ type: 'varchar' })
   kepala!: string;
 

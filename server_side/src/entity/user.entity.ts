@@ -10,6 +10,9 @@ export class User {
   @Column({ type: 'int', nullable: true, name: 'jemaat_id', unique: true })
   jemaatId!: number | null;
 
+  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
+  tenantId!: number | null;
+
   @OneToOne(() => Jemaat, (jemaat) => jemaat.user, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'jemaat_id' }) 
   jemaat!: Jemaat | null;

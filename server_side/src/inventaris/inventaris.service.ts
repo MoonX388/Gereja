@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Inventaris } from '../entity/inventaris.entity';
@@ -10,20 +10,27 @@ export class InventarisService {
     private inventarisRepo: Repository<Inventaris>,
   ) {}
 
-  async findAll(): Promise<Inventaris[]> {
-    return this.inventarisRepo.find({ order: { id: 'DESC' } });
+  async findAll(tenantId: number): Promise<Inventaris[]> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    return this.inventarisRepo.find({
+      where: { tenantId },
+      order: { id: 'DESC' },
+    });
   }
 
-  async create(data: Partial<Inventaris>): Promise<Inventaris> {
-    const item = this.inventarisRepo.create(data);
+  async create(data: Partial<Inventaris>, tenantId: number): Promise<Inventaris> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    const item = this.inventarisRepo.create({ ...data, tenantId });
     return this.inventarisRepo.save(item);
   }
 
-  async update(id: number, data: Partial<Inventaris>): Promise<void> {
-    await this.inventarisRepo.update(id, data);
+  async update(id: number, data: Partial<Inventaris>, tenantId: number): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.inventarisRepo.update({ id, tenantId }, data);
   }
 
-  async remove(id: number): Promise<void> {
-    await this.inventarisRepo.delete(id);
+  async remove(id: number, tenantId: number): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.inventarisRepo.delete({ id, tenantId });
   }
 }

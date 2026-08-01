@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { JadwalService } from './jadwal.service';
 import { Jadwal } from '../entity/jadwal.entity';
@@ -19,24 +20,24 @@ export class JadwalController {
   constructor(private readonly jadwalService: JadwalService) {}
 
   @Get()
-  async getAll(): Promise<Jadwal[]> {
-    return this.jadwalService.findAll();
+  async getAll(@Request() req: any): Promise<Jadwal[]> {
+    return this.jadwalService.findAll(req.user.tenantId);
   }
 
   @Post()
-  async create(@Body() data: Partial<Jadwal>): Promise<Jadwal> {
-    return this.jadwalService.create(data);
+  async create(@Body() data: Partial<Jadwal>, @Request() req: any): Promise<Jadwal> {
+    return this.jadwalService.create(data, req.user.tenantId);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() data: Partial<Jadwal>) {
-    await this.jadwalService.update(Number(id), data);
+  async update(@Param('id') id: string, @Body() data: Partial<Jadwal>, @Request() req: any) {
+    await this.jadwalService.update(Number(id), data, req.user.tenantId);
     return { message: 'Data jadwal diperbarui' };
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.jadwalService.remove(Number(id));
+  async remove(@Param('id') id: string, @Request() req: any) {
+    await this.jadwalService.remove(Number(id), req.user.tenantId);
     return { message: 'Data jadwal dihapus' };
   }
 }

@@ -1,5 +1,5 @@
 // src/users/users.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm'; // 🚀 TAMBAHKAN IMPORT INI
 import { User } from '../entity/user.entity';
@@ -12,8 +12,15 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async findAll(): Promise<User[]> {
-    return this.usersRepository.find({ order: { id: 'DESC' } });
+  async findAll(tenantId?: number): Promise<User[]> {
+    if (!tenantId) {
+      throw new UnauthorizedException('Tenant tidak valid');
+    }
+
+    return this.usersRepository.find({
+      where: { tenantId },
+      order: { id: 'DESC' },
+    });
   }
 
   async create(userData: Partial<User>): Promise<User> {
@@ -22,30 +29,54 @@ export class UsersService {
       userData.password = 'password_default_123';
     }
     const user = this.usersRepository.create(userData);
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+
+    if (!saved.tenantId) {
+      await this.usersRepository.update(saved.id, { tenantId: saved.id });
+      saved.tenantId = saved.id;
+    }
+
+    return saved;
   }
 
-  async update(id: number, userData: Partial<User>): Promise<void> {
+  async update(id: number, userData: Partial<User>, tenantId?: number): Promise<void> {
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, 10);
     }
-    await this.usersRepository.update(id, userData);
+    if (tenantId) {
+      await this.usersRepository.update({ id, tenantId }, userData);
+    } else {
+      await this.usersRepository.update(id, userData);
+    }
   }
 
-  async remove(id: number): Promise<void> {
-    await this.usersRepository.delete(id);
+  async remove(id: number, tenantId?: number): Promise<void> {
+    if (tenantId) {
+      await this.usersRepository.delete({ id, tenantId });
+    } else {
+      await this.usersRepository.delete(id);
+    }
   }
 
   async findByUsername(username: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { username } });
+    return this.usersRepository.findOne({
+      where: { username },
+      relations: { jemaat: true },
+    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { email } });
+    return this.usersRepository.findOne({
+      where: { email },
+      relations: { jemaat: true },
+    });
   }
 
   async findById(id: number): Promise<User | null> {
-    return this.usersRepository.findOne({ where: { id } });
+    return this.usersRepository.findOne({
+      where: { id },
+      relations: { jemaat: true },
+    });
   }
 
   async findChurchBySubdomain(subdomain: string): Promise<any | null> {

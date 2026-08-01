@@ -19,6 +19,9 @@ export class Notifikasi {
   @Column({ type: 'varchar' })
   target!: string; // Semua Jemaat, Pelayan, dll
 
+  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
+  tenantId!: number | null;
+
   @Column({ type: 'varchar' })
   via!: string; // WhatsApp, SMS, Email
 

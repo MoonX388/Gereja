@@ -1,13 +1,21 @@
-import { IsEmail, IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class LoginDto {
+  @IsOptional()
   @IsString()
-  email!: string; // identifier (email/username)
+  email?: string;
 
+  // 🚀 Tambahkan username agar frontend React Anda bisa mengirim data
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @IsNotEmpty()
   @IsString()
   password!: string;
 
-  @IsString()
+  // 🚀 Tambahkan subdomain untuk multi-tenant
   @IsOptional()
-  subdomain?: string; // 🚀 Menerima kiriman teks subdomain lokasi login
+  @IsString()
+  subdomain?: string;
 }

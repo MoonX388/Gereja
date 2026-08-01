@@ -10,6 +10,9 @@ export class Jadwal {
   @PrimaryGeneratedColumn()
   id!: number;
   
+  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
+  tenantId!: number | null;
+
   @Column({ type: 'varchar' })
   nama!: string;
 

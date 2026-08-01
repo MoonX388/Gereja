@@ -13,6 +13,9 @@ export class Inventaris {
   @Column({ type: 'varchar' })
   nama!: string;
 
+  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
+  tenantId!: number | null;
+
   @Column({ type: 'varchar' })
   kategori!: string;
 
