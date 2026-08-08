@@ -45,6 +45,9 @@ export class Jemaat {
   @Column({ type: 'varchar', nullable: true })
   pekerjaan!: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  lingkungan!: string | null;
+
   @Column({ type: 'varchar' })
   status!: string; 
 

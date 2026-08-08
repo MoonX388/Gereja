@@ -54,8 +54,8 @@ export class JemaatService {
 
   async create(dto: any, tenantId: number): Promise<Jemaat> {
     this.validateTenant(tenantId);
-    const jenisKelaminValue = dto.jenisKelamin || dto.jenis_kelamin || 'Laki-laki';
-    const { email, password, role, jenis_kelamin, jenisKelamin, ...dataJemaat } = dto;
+    const jenisKelaminValue = dto.jenisKelamin || dto.jenis_kelamin || dto.gender || 'Laki-laki';
+    const { email, password, role, jenis_kelamin, jenisKelamin, gender, ...dataJemaat } = dto;
 
     const jemaatBaru = this.jemaatRepository.create({
       ...dataJemaat,
@@ -83,10 +83,15 @@ export class JemaatService {
 
   async update(id: number, dto: any, tenantId: number): Promise<void> {
     this.validateTenant(tenantId);
-    const { email, password, role, ...dataJemaat } = dto;
+    const { email, password, role, jenis_kelamin, jenisKelamin, gender, ...rest } = dto;
 
-    if (Object.keys(dataJemaat).length > 0) {
-      await this.jemaatRepository.update({ id, tenantId }, dataJemaat);
+    const normalizedData: Record<string, any> = { ...rest };
+    if (jenisKelamin || jenis_kelamin || gender) {
+      normalizedData.jenisKelamin = jenisKelamin || jenis_kelamin || gender;
+    }
+
+    if (Object.keys(normalizedData).length > 0) {
+      await this.jemaatRepository.update({ id, tenantId }, normalizedData);
     }
 
     if (email || password || role) {

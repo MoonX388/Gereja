@@ -15,20 +15,6 @@ export class AiService {
   ) {}
 
   async generate(prompt: string, nomorHP: string): Promise<string> {
-    if (!this.generator) {
-      console.log('⏳ Memuat Model AI...');
-      const { pipeline } = await import('@xenova/transformers');
-      const modelName =
-        this.configService.get<string>('AI_MODEL') ||
-        'Xenova/Qwen1.5-0.5B-Chat';
-      const quantized = this.configService.get<boolean>('AI_QUANTIZED') ?? true;
-      this.generator = await pipeline('text-generation', modelName, {
-        quantized,
-      });
-      console.log('✅ Model AI siap');
-    }
-
-    // --- Sisa kode pencarian database di bawah ini tetap sama seperti kemarin ---
     const userGereja = await this.jemaatRepository.findOne({
       where: { telepon: nomorHP },
     });
@@ -41,14 +27,54 @@ export class AiService {
     const pembatas = '===JAWABAN_AI===';
     const chatPrompt = `Instruksi: Kamu adalah AI asisten WhatsApp Gereja yang ramah, sopan, dan menjawab singkat.\n\nData Pengirim:\n${infoUser}\n\nUser: ${prompt}\n\n${pembatas}\n`;
 
-    const result = await this.generator(chatPrompt, {
-      max_new_tokens: 40,
-      temperature: 0.4,
-      do_sample: true,
-      repetition_penalty: 1.2,
+    const aiApiUrl = this.configService.get<string>('AI_API_URL');
+    const aiApiKey = this.configService.get<string>('AI_API_KEY');
+    const aiModel = this.configService.get<string>('AI_MODEL') || 'gpt-4o-mini';
+
+    if (!aiApiUrl) {
+      return 'AI belum dikonfigurasi. Silakan set AI_API_URL di environment.';
+    }
+
+    const response = await fetch(aiApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(aiApiKey ? { Authorization: `Bearer ${aiApiKey}` } : {}),
+      },
+      body: JSON.stringify({
+        model: aiModel,
+        prompt: chatPrompt,
+        max_tokens: 60,
+        temperature: 0.4,
+        stream: false,
+      }),
     });
 
-    let jawaban = result[0].generated_text;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`AI API error: ${response.status} ${errorText}`);
+    }
+
+    const data = (await response.json()) as {
+      text?: string;
+      content?: string;
+      reply?: string;
+      output?: string;
+      choices?: Array<{
+        text?: string;
+        message?: { content?: string };
+      }>;
+    };
+
+    let jawaban =
+      data.text ||
+      data.content ||
+      data.reply ||
+      data.output ||
+      data.choices?.[0]?.text ||
+      data.choices?.[0]?.message?.content ||
+      '';
+
     if (jawaban.includes(pembatas)) {
       jawaban = jawaban.split(pembatas)[1].trim();
     } else {
