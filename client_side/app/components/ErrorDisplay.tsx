@@ -31,6 +31,7 @@ interface ErrorData {
 }
 
 const version = process.env.NEXT_PUBLIC_APP_VERSION || 'v1.1';
+const appName = process.env.NEXT_PUBLIC_APP_NAME || 'GerejaDigital';
 
 const errorMap: Record<number, ErrorData> = {
   200: { icon: FaCircleCheck, badge: 'OK', title: 'Permintaan Berhasil', desc: 'Server telah memproses permintaan Anda dengan sukses.' },
@@ -156,7 +157,7 @@ export default function ErrorDisplay({
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14" />
             </svg>
-            GerejaDigital
+            {appName}
           </span>
           <span>|</span>
           <span>{version}</span>

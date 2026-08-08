@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
@@ -43,12 +43,6 @@ export default function Absensi() {
     'Sakit': 'bg-purple-100 text-purple-700',
   };
 
-  const today = new Date().toISOString().split('T')[0];
-  const todayAttendance = useMemo(() => absensi.filter((item) => item.tanggal === today), [absensi, today]);
-  const hadirCount = todayAttendance.filter((item) => item.status === 'Hadir').length;
-  const totalJemaat = jemaat.length;
-  const presentPercentage = totalJemaat > 0 ? Math.round((hadirCount / totalJemaat) * 100) : 0;
-
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
@@ -66,24 +60,8 @@ export default function Absensi() {
   <span className="hidden sm:inline ml-1">Catat Absensi</span>
 </button>
         </div>
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="rounded-xl bg-[#f7f9fc] p-4">
-              <p className="text-sm text-gray-500">Jemaat Hadir</p>
-              <p className="text-2xl font-bold text-[#1e3a5f]">{hadirCount}</p>
-            </div>
-            <div className="rounded-xl bg-[#f7f9fc] p-4">
-              <p className="text-sm text-gray-500">Total Jemaat Aktif</p>
-              <p className="text-2xl font-bold text-[#1e3a5f]">{totalJemaat}</p>
-            </div>
-            <div className="rounded-xl bg-[#f7f9fc] p-4">
-              <p className="text-sm text-gray-500">Persentase Kehadiran</p>
-              <p className="text-2xl font-bold text-[#1e3a5f]">{presentPercentage}%</p>
-            </div>
-          </div>
-
-          {todayAttendance.length > 0 ? (
-            <div className="overflow-x-auto">
+        <div className="p-4 overflow-x-auto">
+          {absensi.length > 0 ? (
             <table className="w-full text-sm modern-table">
               <thead>
                 <tr>
@@ -95,7 +73,7 @@ export default function Absensi() {
                 </tr>
               </thead>
               <tbody>
-                {todayAttendance.map((item) => (
+                {absensi.map((item) => (
                   <tr key={item.id}>
                     <td>{item.tanggal}</td>
                     <td>{item.kegiatan}</td>
@@ -122,11 +100,10 @@ export default function Absensi() {
                 ))}
               </tbody>
             </table>
-            </div>
           ) : (
             <div className="text-center py-16 text-gray-400">
               <i className="fa-solid fa-clipboard text-5xl mb-3 block"></i>
-              <p className="text-lg">Belum ada catatan absensi untuk hari ini</p>
+              <p className="text-lg">Belum ada catatan absensi</p>
             </div>
           )}
         </div>

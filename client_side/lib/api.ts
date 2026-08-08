@@ -1,8 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL:
-    "https://api2.gerejapintar.id", // Ganti dengan URL server Anda
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
 });
 
 api.interceptors.request.use((config) => {

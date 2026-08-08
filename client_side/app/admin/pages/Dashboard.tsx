@@ -96,10 +96,41 @@ export default function Dashboard() {
     datasets: [
       {
         data: [pria, wanita],
-        backgroundColor: ['#2c5282', '#e8c547'],
+        backgroundColor: ['#1e3a5f', '#e8c547'],
+        borderColor: ['#ffffff', '#ffffff'],
+        borderWidth: 2,
+        hoverOffset: 8,
       }
     ]
   };
+
+  const upcomingBirthdays = useMemo(() => {
+    const today = new Date();
+    const limitDate = new Date(today);
+    limitDate.setDate(today.getDate() + 7);
+
+    return jemaat
+      .map((item) => {
+        if (!item.tglLahir) return null;
+        const [year, month, day] = item.tglLahir.split('-').map(Number);
+        if (!year || !month || !day) return null;
+
+        const birthday = new Date(today.getFullYear(), month - 1, day);
+        if (birthday < today) {
+          birthday.setFullYear(today.getFullYear() + 1);
+        }
+
+        if (birthday > limitDate) return null;
+
+        return {
+          ...item,
+          birthdayDate: birthday,
+        };
+      })
+      .filter((item): item is (typeof jemaat[number] & { birthdayDate: Date }) => item !== null)
+      .sort((a, b) => a.birthdayDate.getTime() - b.birthdayDate.getTime())
+      .slice(0, 5);
+  }, [jemaat]);
 
   return (
     <div>
@@ -163,7 +194,11 @@ export default function Dashboard() {
                 options={{ 
                   responsive: true, 
                   maintainAspectRatio: false, 
-                  plugins: { legend: { position: 'bottom' } } 
+                  cutout: '65%',
+                  plugins: { 
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16, font: { size: 12 } } },
+                    tooltip: { enabled: true } 
+                  } 
                 }} 
               />
             </div>
@@ -173,6 +208,44 @@ export default function Dashboard() {
               <p className="text-lg">Belum ada data jemaat</p>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
+          <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
+            <i className="fa-solid fa-cake-candles mr-2 text-[#e8c547]"></i>
+            Ulang Tahun 1 Minggu ke Depan
+          </h3>
+          {upcomingBirthdays.length > 0 ? (
+            <ul className="space-y-2">
+              {upcomingBirthdays.map((item: any) => (
+                <li key={item.id} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2">
+                  <div>
+                    <p className="font-semibold text-gray-800">{item.nama}</p>
+                    <p className="text-sm text-gray-500">{item.tglLahir ? new Date(item.tglLahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) : '-'}</p>
+                  </div>
+                  <span className="text-xs font-semibold text-[#1e3a5f]">{item.birthdayDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <i className="fa-solid fa-cake-candles text-4xl mb-3 block"></i>
+              <p>Tidak ada ulang tahun dalam 1 minggu</p>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
+          <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
+            <i className="fa-solid fa-church mr-2 text-[#e8c547]"></i>
+            Kehadiran Jemaat Hari Ini
+          </h3>
+          <div className="rounded-xl bg-[#f7f9fc] p-4 text-center">
+            <p className="text-4xl font-bold text-[#1e3a5f]">{jemaat.length}</p>
+            <p className="text-sm text-gray-500">Total jemaat aktif</p>
+          </div>
         </div>
       </div>
 

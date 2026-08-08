@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ComfirmationModal';
 import { useToast } from '@/app/components/ToastContext';
 import api from "@/lib/api"; 
 
@@ -19,13 +20,19 @@ interface Jemaat {
   telepon?: string;
   nikah?: string;
   pekerjaan?: string;
+  lingkungan?: string;
   status: string;
 }
 
 export default function DataJemaat() {
   const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterLingkungan, setFilterLingkungan] = useState('all');
+  const [sortBy, setSortBy] = useState<'nama' | 'tglLahir' | 'alamat'>('nama');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   // State untuk menampung list jemaat dinamis dari database Supabase
@@ -46,6 +53,7 @@ export default function DataJemaat() {
     telepon: '',
     nikah: 'Belum Menikah',
     pekerjaan: '',
+    lingkungan: '',
     status: 'Aktif',
   });
 
@@ -53,7 +61,12 @@ export default function DataJemaat() {
   const fetchDashboardData = async () => {
     try {
       const res = await api.get('/jemaat/dashboard');
-      setJemaatList(res.data.jemaat || []);
+      const normalized = (res.data.jemaat || []).map((item: any) => ({
+        ...item,
+        gender: item.gender || item.jenisKelamin || item.jenis_kelamin || 'Pria',
+        lingkungan: item.lingkungan || '',
+      }));
+      setJemaatList(normalized);
     } catch (error) {
       console.error("Gagal memuat data jemaat:", error);
       showToast("Gagal mengambil data dari database", "error");
@@ -64,12 +77,35 @@ export default function DataJemaat() {
     fetchDashboardData();
   }, []);
 
-  // Filter pencarian berdasarkan nama dan alamat jemaat
-  const filteredJemaat = jemaatList.filter(
-    (j) =>
-      j.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.alamat?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const lingkunganOptions = useMemo(() => {
+    return Array.from(new Set(jemaatList.map((item) => item.lingkungan).filter(Boolean))) as string[];
+  }, [jemaatList]);
+
+  const filteredJemaat = useMemo(() => {
+    const normalizedSearch = searchTerm.toLowerCase();
+
+    const filtered = jemaatList.filter((j) => {
+      const matchesSearch =
+        j.nama?.toLowerCase().includes(normalizedSearch) ||
+        j.alamat?.toLowerCase().includes(normalizedSearch) ||
+        j.lingkungan?.toLowerCase().includes(normalizedSearch);
+      const matchesLingkungan = filterLingkungan === 'all' || j.lingkungan === filterLingkungan;
+      return matchesSearch && matchesLingkungan;
+    });
+
+    filtered.sort((a, b) => {
+      const direction = sortOrder === 'asc' ? 1 : -1;
+      if (sortBy === 'tglLahir') {
+        return (a.tglLahir || '').localeCompare(b.tglLahir || '') * direction;
+      }
+      if (sortBy === 'alamat') {
+        return (a.alamat || '').localeCompare(b.alamat || '') * direction;
+      }
+      return a.nama.localeCompare(b.nama) * direction;
+    });
+
+    return filtered;
+  }, [jemaatList, searchTerm, filterLingkungan, sortBy, sortOrder]);
 
   const handleOpenModal = (item?: Jemaat) => {
     if (item) {
@@ -87,6 +123,7 @@ export default function DataJemaat() {
         telepon: item.telepon || '',
         nikah: item.nikah || 'Belum Menikah',
         pekerjaan: item.pekerjaan || '',
+        lingkungan: item.lingkungan || '',
         status: item.status || 'Aktif',
       });
     } else {
@@ -104,6 +141,7 @@ export default function DataJemaat() {
         telepon: '',
         nikah: 'Belum Menikah',
         pekerjaan: '',
+        lingkungan: '',
         status: 'Aktif',
       });
     }
@@ -117,11 +155,16 @@ export default function DataJemaat() {
     }
 
     try {
+      const payload = {
+        ...formData,
+        jenisKelamin: formData.gender,
+      };
+
       if (editingId !== null) {
-        await api.put(`/jemaat/${editingId}`, formData);
+        await api.put(`/jemaat/${editingId}`, payload);
         showToast('Data jemaat berhasil diperbarui!', 'success');
       } else {
-        await api.post('/jemaat', formData);
+        await api.post('/jemaat', payload);
         showToast('Jemaat baru berhasil ditambahkan!', 'success');
       }
       fetchDashboardData(); // Otomatis refresh tabel layar setelah menambah/mengedit
@@ -132,14 +175,21 @@ export default function DataJemaat() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Apakah Anda yakin ingin menghapus data jemaat ini?')) {
-      try {
-        await api.delete(`/jemaat/${id}`);
-        showToast('Data jemaat berhasil dihapus!', 'success');
-        fetchDashboardData(); 
-      } catch (error) {
-        showToast('Gagal menghapus data', 'error');
-      }
+    setDeleteId(id);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteId === null) return;
+    try {
+      await api.delete(`/jemaat/${deleteId}`);
+      showToast('Data jemaat berhasil dihapus!', 'success');
+      fetchDashboardData();
+    } catch (error) {
+      showToast('Gagal menghapus data', 'error');
+    } finally {
+      setDeleteId(null);
+      setIsConfirmOpen(false);
     }
   };
 
@@ -152,14 +202,38 @@ export default function DataJemaat() {
             <i className="fa-solid fa-users mr-2 text-[#1e3a5f]"></i>
             Data Jemaat
           </h3>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <input
               type="text"
-              placeholder="Cari..."
+              placeholder="Cari nama/alamat/lingkungan"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm w-full sm:w-48"
+              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm w-full sm:w-56"
             />
+            <select
+              value={filterLingkungan}
+              onChange={(e) => setFilterLingkungan(e.target.value)}
+              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="all">Semua Lingkungan</option>
+              {lingkunganOptions.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [nextSortBy, nextSortOrder] = e.target.value.split('-') as [typeof sortBy, typeof sortOrder];
+                setSortBy(nextSortBy);
+                setSortOrder(nextSortOrder);
+              }}
+              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="nama-asc">Urut Nama A-Z</option>
+              <option value="nama-desc">Urut Nama Z-A</option>
+              <option value="tglLahir-asc">Urut Tanggal Lahir</option>
+              <option value="alamat-asc">Urut Alamat</option>
+            </select>
             <button
               onClick={() => handleOpenModal()}
               className="bg-[#1e3a5f] hover:bg-[#2c5282] text-white px-3 py-2 rounded-lg text-sm font-semibold transition"
@@ -183,6 +257,7 @@ export default function DataJemaat() {
                   <th>Baptis</th>
                   <th>Sidi</th>
                   <th>Alamat</th>
+                  <th>Lingkungan</th>
                   <th>Status</th>
                   <th className="text-center">Aksi</th>
                 </tr>
@@ -197,6 +272,7 @@ export default function DataJemaat() {
                     <td>{item.tempatBaptis ? `${item.tempatBaptis}, ` : ''}{item.tglBaptis || '-'}</td>
                     <td>{item.tempatSidi ? `${item.tempatSidi}, ` : ''}{item.tglSidi || '-'}</td>
                     <td className="text-xs">{item.alamat || '-'}</td>
+                    <td>{item.lingkungan || '-'}</td>
                     <td>
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                         {item.status}
@@ -230,6 +306,20 @@ export default function DataJemaat() {
       </div>
 
       {/* ===== DIALOG MODAL INPUT DATA ===== */}
+      <ConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={() => {
+          setDeleteId(null);
+          setIsConfirmOpen(false);
+        }}
+        onConfirm={confirmDelete}
+        title="Hapus data jemaat?"
+        description="Data jemaat yang dihapus tidak akan muncul lagi di daftar. Tindakan ini tidak bisa dibatalkan."
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        variant="danger"
+      />
+
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -365,6 +455,17 @@ export default function DataJemaat() {
               value={formData.pekerjaan}
               onChange={(e) => setFormData({ ...formData, pekerjaan: e.target.value })}
               className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">Lingkungan</label>
+            <input
+              type="text"
+              value={formData.lingkungan}
+              onChange={(e) => setFormData({ ...formData, lingkungan: e.target.value })}
+              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
+              placeholder="Contoh: A, B, C"
             />
           </div>
 
