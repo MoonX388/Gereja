@@ -1,0 +1,13 @@
+# Development Dockerfile with hot-reload
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+EXPOSE 3000
+
+# Run with watch mode
+CMD ["npm", "run", "dev"]

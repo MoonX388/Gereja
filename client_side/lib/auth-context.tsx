@@ -1,0 +1,137 @@
+'use client';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import api from './api';
+
+interface User {
+  id: number;
+  nama: string;
+  email: string;
+  role: string;
+  username: string;
+  isDemo?: boolean;
+  namaGereja?: string;
+  subdomain?: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  // 🚀 PERBAIKAN 1: Sesuaikan parameter agar menerima Objek (sama seperti di LoginPage)
+  login: (credentials: { username: string; password: string; subdomain?: string }) => Promise<void>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+
+const getCookieToken = () => {
+  if (typeof window === 'undefined') return null;
+  const match = document.cookie
+    .split('; ')
+    .find((cookie) => cookie.startsWith('auth_token='));
+  return match ? match.split('=')[1] : null;
+};
+
+const setAuthToken = (token: string) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('token', token);
+  document.cookie = `auth_token=${token}; path=/; max-age=${604800}`; // 7 hari
+};
+
+const clearAuthToken = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('token');
+  document.cookie = 'auth_token=; path=/; max-age=0';
+};
+
+const DUMMY_AUTH_TOKEN = 'demo_token';
+const demoLoginIdentifiers = [
+  'admin',
+  'admin@gereja.local',
+  'user demo',
+  'demo',
+  'demo@gereja.local',
+];
+
+const isDemoLogin = (identifier: string, password: string) => {
+  return demoLoginIdentifiers.includes(identifier.toLowerCase().trim()) && password === 'admin123';
+};
+
+const isDummyToken = (token?: string) => token === DUMMY_AUTH_TOKEN;
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const token = localStorage.getItem('token') || getCookieToken();
+    return Boolean(token);
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token') || getCookieToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    if (isDummyToken(token)) {
+      setUser({
+        id: 1,
+        nama: 'Admin Demo',
+        email: 'admin@gereja.local',
+        role: 'admin',
+        username: 'admin',
+        isDemo: true,
+      });
+      setLoading(false);
+      return;
+    }
+
+    setAuthToken(token);
+    api.get('/auth/profile')
+      .then(res => setUser(res.data))
+      .catch(() => clearAuthToken())
+      .finally(() => setLoading(false));
+  }, []);
+
+  // 🚀 PERBAIKAN BERSAMA: Ekstrak objek credentials
+  const login = async (credentials: { username: string; password: string; subdomain?: string }) => {
+    const { username, password, subdomain } = credentials;
+
+    if (isDemoLogin(username, password)) {
+      const token = DUMMY_AUTH_TOKEN;
+      setAuthToken(token);
+      setUser({
+        id: 1,
+        nama: 'Admin Demo',
+        email: 'admin@gereja.local',
+        role: 'admin',
+        username: 'admin',
+        isDemo: true,
+      });
+      return;
+    }
+
+    // 🚀 PERBAIKAN 2: Kirim key 'username', bukan 'email' agar dibaca oleh NestJS
+    const res = await api.post('/auth/login', { username, password, subdomain });
+    
+    // 🚀 PERBAIKAN 3: Backend melempar 'token', BUKAN 'access_token'
+    setAuthToken(res.data.token); 
+    setUser(res.data.user);
+    
+    // Kembalikan user agar LoginPage bisa melakukan pengecekan role & redirect
+    return res.data.user; 
+  };
+
+  const logout = () => {
+    clearAuthToken();
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => useContext(AuthContext);
