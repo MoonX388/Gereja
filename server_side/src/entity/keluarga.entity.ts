@@ -7,20 +7,21 @@ import {
 
 @Entity('keluarga')
 export class Keluarga {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ type: 'varchar', unique: true })
   noKK!: string;
 
-  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
-  tenantId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null;
 
   @Column({ type: 'varchar' })
   kepala!: string;
 
   @Column({ type: 'varchar' })
   namaaggota!: string;
+  
   @Column({ type: 'text', nullable: true })
   alamat?: string;
 

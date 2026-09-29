@@ -7,8 +7,8 @@ import {
 
 @Entity('notifikasi')
 export class Notifikasi {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ type: 'varchar' })
   judul!: string;
@@ -19,8 +19,8 @@ export class Notifikasi {
   @Column({ type: 'varchar' })
   target!: string; // Semua Jemaat, Pelayan, dll
 
-  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
-  tenantId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null;
 
   @Column({ type: 'varchar' })
   via!: string; // WhatsApp, SMS, Email

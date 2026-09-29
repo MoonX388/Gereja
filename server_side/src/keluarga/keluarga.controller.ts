@@ -31,13 +31,13 @@ export class KeluargaController {
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<Keluarga>, @Request() req: any) {
-    await this.keluargaService.update(Number(id), data, req.user.tenantId);
+    await this.keluargaService.update(id, data, req.user.tenantId);
     return { message: 'Data keluarga diperbarui' };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.keluargaService.remove(Number(id), req.user.tenantId);
+    await this.keluargaService.remove(id, req.user.tenantId);
     return { message: 'Data keluarga dihapus' };
   }
 }

@@ -5,6 +5,7 @@ import {
   Body,
   HttpException,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { BotService } from './bot.service';
 import { TokenService } from './token.service';
@@ -21,8 +22,8 @@ export class BotController {
 
   @Get('token')
   @UseGuards(AuthGuard('jwt'), AdminGuard)
-  getToken() {
-    const token = this.tokenService.getToken();
+  async getToken(@Request() req: any) {
+    const token = await this.tokenService.getToken(req.user.tenantId);
     return { token: token };
   }
 
@@ -35,10 +36,12 @@ export class BotController {
   }
 
   @Post('request-pairing-code')
+  @UseGuards(AuthGuard('jwt'), AdminGuard)
   async requestPairingCode(
     @Body() body: { phoneNumber: string; token: string },
+    @Request() req: any,
   ) {
-    const isValid = await this.tokenService.validateToken(body.token);
+    const isValid = await this.tokenService.validateToken(body.token, req.user.tenantId);
     if (!isValid) {
       throw new HttpException(
         'Token tidak valid atau kadaluarsa',

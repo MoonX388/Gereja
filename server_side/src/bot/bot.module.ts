@@ -1,18 +1,27 @@
-import { Module } from '@nestjs/common';
+import { Module, DynamicModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiModule } from './ai/ai.module';
 import { BotService } from './bot.service';
 import { BotController } from './bot.controller';
 import { TokenService } from './token.service';
-import { TokenEntity } from '../entity/token.entity';
+import { DialogflowController } from './dialogflow.controller';
+import { TenantsModule } from '../tenants/tenants.module';
 
-@Module({
-  imports: [
-    AiModule,
-    TypeOrmModule.forFeature([TokenEntity]), // <-- daftarkan entity
-  ],
-  controllers: [BotController],
-  providers: [BotService, TokenService],
-  exports: [BotService, TokenService], // opsional, jika mau dipakai modul lain
-})
-export class BotModule {}
+@Module({})
+export class BotModule {
+  static register(): DynamicModule {
+    const useTypeOrm = process.env.FITUR_DB === 'true';
+
+    return {
+      module: BotModule,
+      imports: [
+        AiModule,
+        TenantsModule,
+        ...(useTypeOrm ? [TypeOrmModule.forFeature([])] : []),
+      ],
+      controllers: [BotController, DialogflowController],
+      providers: [BotService, TokenService],
+      exports: [BotService, TokenService],
+    };
+  }
+}

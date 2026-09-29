@@ -7,14 +7,14 @@ import {
 
 @Entity('inventaris')
 export class Inventaris {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ type: 'varchar' })
   nama!: string;
 
-  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
-  tenantId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null;
 
   @Column({ type: 'varchar' })
   kategori!: string;

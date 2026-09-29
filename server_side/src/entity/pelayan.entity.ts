@@ -3,8 +3,8 @@ import { User } from './user.entity';
 
 @Entity('pelayan')
 export class Pelayan {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ type: 'varchar' })
   nama!: string;
@@ -21,11 +21,11 @@ export class Pelayan {
   @CreateDateColumn({ type: 'timestamp', name: 'createdAt' })
   createdAt!: Date;
 
-  @Column({ type: 'integer', nullable: true, name: 'tenant_id' })
-  tenantId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null;
 
-  @Column({ type: 'integer', nullable: true, name: 'userId' })
-  userId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'userId' })
+  userId!: string | null;
 
   @ManyToOne(() => User, (user) => user.pelayans, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'userId' })

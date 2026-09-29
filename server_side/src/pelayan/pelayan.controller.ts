@@ -31,13 +31,13 @@ export class PelayanController {
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<Pelayan>, @Request() req: any) {
-    await this.pelayanService.update(Number(id), data, req.user.tenantId);
+    await this.pelayanService.update(id, data, req.user.tenantId);
     return { message: 'Data pelayan diperbarui' };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.pelayanService.remove(Number(id), req.user.tenantId);
+    await this.pelayanService.remove(id, req.user.tenantId);
     return { message: 'Data pelayan dihapus' };
   }
 }

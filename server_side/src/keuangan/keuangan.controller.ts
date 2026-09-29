@@ -31,13 +31,13 @@ export class KeuanganController {
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<Keuangan>, @Request() req: any) {
-    await this.keuanganService.update(Number(id), data, req.user.tenantId);
+    await this.keuanganService.update(id, data, req.user.tenantId);
     return { message: 'Data keuangan diperbarui' };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.keuanganService.remove(Number(id), req.user.tenantId);
+    await this.keuanganService.remove(id, req.user.tenantId);
     return { message: 'Data keuangan dihapus' };
   }
 }

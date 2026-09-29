@@ -21,23 +21,23 @@ export class InventarisController {
 
   @Get()
   async getAll(@Request() req: any): Promise<Inventaris[]> {
-    return this.inventarisService.findAll(req.user.tenantId);
+    return this.inventarisService.findAll(req.user.tenantId, req);
   }
 
   @Post()
   async create(@Body() data: Partial<Inventaris>, @Request() req: any): Promise<Inventaris> {
-    return this.inventarisService.create(data, req.user.tenantId);
+    return this.inventarisService.create(data, req.user.tenantId, req);
   }
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<Inventaris>, @Request() req: any) {
-    await this.inventarisService.update(Number(id), data, req.user.tenantId);
+    await this.inventarisService.update(id, data, req.user.tenantId, req);
     return { message: 'Data inventaris diperbarui' };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.inventarisService.remove(Number(id), req.user.tenantId);
+    await this.inventarisService.remove(id, req.user.tenantId, req);
     return { message: 'Data inventaris dihapus' };
   }
 }

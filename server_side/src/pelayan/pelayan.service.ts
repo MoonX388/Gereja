@@ -1,36 +1,28 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 import { Pelayan } from '../entity/pelayan.entity';
+import type { IPelayanRepository } from '../interfaces/pelayan-repository.interface';
 
 @Injectable()
 export class PelayanService {
-  constructor(
-    @InjectRepository(Pelayan)
-    private pelayanRepo: Repository<Pelayan>,
-  ) {}
+  constructor(@Inject('IPelayanRepository') private repo: IPelayanRepository) {}
 
-  async findAll(tenantId: number): Promise<Pelayan[]> {
+  async findAll(tenantId: string): Promise<Pelayan[]> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    return this.pelayanRepo.find({
-      where: { tenantId },
-      order: { id: 'DESC' },
-    });
+    return this.repo.findAll(tenantId);
   }
 
-  async create(data: Partial<Pelayan>, tenantId: number): Promise<Pelayan> {
+  async create(data: Partial<Pelayan>, tenantId: string): Promise<Pelayan> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    const item = this.pelayanRepo.create({ ...data, tenantId });
-    return this.pelayanRepo.save(item);
+    return this.repo.create(data, tenantId);
   }
 
-  async update(id: number, data: Partial<Pelayan>, tenantId: number): Promise<void> {
+  async update(id: string, data: Partial<Pelayan>, tenantId: string): Promise<void> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.pelayanRepo.update({ id, tenantId }, data);
+    await this.repo.update(id, data, tenantId);
   }
 
-  async remove(id: number, tenantId: number): Promise<void> {
+  async remove(id: string, tenantId: string): Promise<void> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.pelayanRepo.delete({ id, tenantId });
+    await this.repo.remove(id, tenantId);
   }
 }

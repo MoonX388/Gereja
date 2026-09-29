@@ -1,36 +1,28 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 import { Keluarga } from '../entity/keluarga.entity';
+import type { IKeluargaRepository } from '../interfaces/keluarga-repository.interface';
 
 @Injectable()
 export class KeluargaService {
-  constructor(
-    @InjectRepository(Keluarga)
-    private keluargaRepo: Repository<Keluarga>,
-  ) {}
-
-  async findAll(tenantId: number): Promise<Keluarga[]> {
+  constructor(@Inject('IKeluargaRepository') private repo: IKeluargaRepository) {}
+  
+  async findAll(tenantId: string): Promise<Keluarga[]> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    return this.keluargaRepo.find({
-      where: { tenantId },
-      order: { id: 'DESC' },
-    });
+    return this.repo.findAll(tenantId);
   }
 
-  async create(data: Partial<Keluarga>, tenantId: number): Promise<Keluarga> {
+  async create(data: Partial<Keluarga>, tenantId: string): Promise<Keluarga> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    const item = this.keluargaRepo.create({ ...data, tenantId });
-    return this.keluargaRepo.save(item);
+    return this.repo.create(data, tenantId);
   }
 
-  async update(id: number, data: Partial<Keluarga>, tenantId: number): Promise<void> {
+  async update(id: string, data: Partial<Keluarga>, tenantId: string): Promise<void> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.keluargaRepo.update({ id, tenantId }, data);
+    await this.repo.update(id, data, tenantId);
   }
 
-  async remove(id: number, tenantId: number): Promise<void> {
+  async remove(id: string, tenantId: string): Promise<void> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.keluargaRepo.delete({ id, tenantId });
+    await this.repo.remove(id, tenantId);
   }
 }

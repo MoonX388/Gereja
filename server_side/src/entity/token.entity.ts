@@ -8,8 +8,11 @@ import {
 
 @Entity('tokens')
 export class TokenEntity {
-  @PrimaryGeneratedColumn()
-  id!: number; // ⬅️ tambahkan !
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
+
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null; // ⬅️ tambahkan !
 
   @Column({ type: 'text' })
   token!: string; // ⬅️ tambahkan !

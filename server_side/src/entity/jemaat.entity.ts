@@ -3,8 +3,8 @@ import { User } from './user.entity';
 
 @Entity('jemaat')
 export class Jemaat {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({ type: 'varchar' })
   nama!: string;
@@ -45,14 +45,11 @@ export class Jemaat {
   @Column({ type: 'varchar', nullable: true })
   pekerjaan!: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
-  lingkungan!: string | null;
-
   @Column({ type: 'varchar' })
   status!: string; 
 
-  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
-  tenantId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt!: Date;

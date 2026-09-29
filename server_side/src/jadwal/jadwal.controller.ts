@@ -31,13 +31,13 @@ export class JadwalController {
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<Jadwal>, @Request() req: any) {
-    await this.jadwalService.update(Number(id), data, req.user.tenantId);
+    await this.jadwalService.update(id, data, req.user.tenantId);
     return { message: 'Data jadwal diperbarui' };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.jadwalService.remove(Number(id), req.user.tenantId);
+    await this.jadwalService.remove(id, req.user.tenantId);
     return { message: 'Data jadwal dihapus' };
   }
 }

@@ -4,14 +4,14 @@ import { Pelayan } from './pelayan.entity';
 
 @Entity('user')
 export class User {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-  @Column({ type: 'int', nullable: true, name: 'jemaat_id', unique: true })
-  jemaatId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'jemaat_id', unique: true })
+  jemaatId!: string | null;
 
-  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
-  tenantId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null;
 
   @OneToOne(() => Jemaat, (jemaat) => jemaat.user, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'jemaat_id' }) 
@@ -32,6 +32,9 @@ export class User {
   // 🚀 PERBAIKAN: Tambahkan default value agar sinkronisasi PostgreSQL sukses!
   @Column({ type: 'varchar', default: 'jemaat' })
   role!: string;
+
+  @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
+  permissions!: string[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt!: Date;

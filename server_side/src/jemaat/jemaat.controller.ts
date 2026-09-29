@@ -29,8 +29,16 @@ export class JemaatController {
 
   @Get()
   async getAll(@Req() req: any): Promise<Jemaat[]> {
-    const tenantId = req.user.tenantId;
-    return this.jemaatService.findAll(tenantId);
+    try {
+      const tenantId = req.user.tenantId;
+      if (!tenantId) {
+        throw new UnauthorizedException('Tenant ID tidak ditemukan dalam token');
+      }
+      return this.jemaatService.findAll(tenantId);
+    } catch (error) {
+      console.error('Error in getAll jemaat:', error);
+      throw error;
+    }
   }
 
   @Post()
@@ -42,14 +50,14 @@ export class JemaatController {
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     const tenantId = req.user.tenantId;
-    await this.jemaatService.update(Number(id), data, tenantId);
+    await this.jemaatService.update(id, data, tenantId);
     return { message: 'Data jemaat berhasil diperbarui' };
   }
 
   @Delete(':id')
   async delete(@Param('id') id: string, @Req() req: any) {
     const tenantId = req.user.tenantId;
-    await this.jemaatService.remove(Number(id), tenantId);
+    await this.jemaatService.remove(id, tenantId);
     return { message: 'Data jemaat berhasil dihapus' };
   }
 }

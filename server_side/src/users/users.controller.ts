@@ -40,14 +40,14 @@ export class UsersController {
 
   // 🆕 Update biodata jemaat ATAU ganti JABATAN (role)
   @Put(':id')
-  async updateUser(@Param('id') id: number, @Body() body: any, @Request() req: any) {
+  async updateUser(@Param('id') id: string, @Body() body: any, @Request() req: any) {
     await this.usersService.update(id, body, req.user.tenantId);
     return { message: 'Data jemaat diperbarui' };
   }
 
   // 🆕 Hapus jemaat
   @Delete(':id')
-  async removeUser(@Param('id') id: number, @Request() req: any) {
+  async removeUser(@Param('id') id: string, @Request() req: any) {
     await this.usersService.remove(id, req.user.tenantId);
     return { message: 'Jemaat berhasil dihapus' };
   }

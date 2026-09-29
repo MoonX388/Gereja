@@ -1,36 +1,28 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 import { Jadwal } from '../entity/jadwal.entity';
+import type { IJadwalRepository } from '../interfaces/jadwal-repository.interface';
 
 @Injectable()
 export class JadwalService {
-  constructor(
-    @InjectRepository(Jadwal)
-    private jadwalRepo: Repository<Jadwal>,
-  ) {}
+  constructor(@Inject('IJadwalRepository') private repo: IJadwalRepository) {}
 
-  async findAll(tenantId: number): Promise<Jadwal[]> {
+  async findAll(tenantId: string): Promise<Jadwal[]> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    return this.jadwalRepo.find({
-      where: { tenantId },
-      order: { tanggal: 'DESC' },
-    });
+    return this.repo.findAll(tenantId);
   }
 
-  async create(data: Partial<Jadwal>, tenantId: number): Promise<Jadwal> {
+  async create(data: Partial<Jadwal>, tenantId: string): Promise<Jadwal> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    const item = this.jadwalRepo.create({ ...data, tenantId });
-    return this.jadwalRepo.save(item);
+    return this.repo.create(data, tenantId);
   }
 
-  async update(id: number, data: Partial<Jadwal>, tenantId: number): Promise<void> {
+  async update(id: string, data: Partial<Jadwal>, tenantId: string): Promise<void> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.jadwalRepo.update({ id, tenantId }, data);
+    await this.repo.update(id, data, tenantId);
   }
 
-  async remove(id: number, tenantId: number): Promise<void> {
+  async remove(id: string, tenantId: string): Promise<void> {
     if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.jadwalRepo.delete({ id, tenantId });
+    await this.repo.remove(id, tenantId);
   }
 }

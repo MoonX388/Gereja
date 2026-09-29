@@ -7,11 +7,11 @@ import {
 
 @Entity('keuangan')
 export class Keuangan {
-  @PrimaryGeneratedColumn()
-  id!: number; // ✅ tambahkan !
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-  @Column({ type: 'int', nullable: true, name: 'tenant_id' })
-  tenantId!: number | null;
+  @Column({ type: 'uuid', nullable: true, name: 'tenant_id' })
+  tenantId!: string | null;
 
   @Column({ type: 'varchar' })
   jenis!: 'masuk' | 'keluar'; // ✅ tambahkan !

@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiService } from './ai.service';
-import { Jemaat } from '../../entity/jemaat.entity'; // Pastikan path mundur 2 tingkat sudah benar
+import { JemaatModule } from '../../jemaat/jemaat.module'; // Sesuaikan path ini jika perlu
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Jemaat]), // 👈 WAJIB ADA: Mengenalkan tabel jemaat ke modul ini
+    JemaatModule.register(), // 👈 GUNAKAN INI SEBAGAI GANTI TypeOrmModule
   ],
   providers: [AiService],
-  exports: [AiService], // Diekspor agar bisa dibaca dari luar
+  exports: [AiService],
 })
 export class AiModule {}

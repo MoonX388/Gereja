@@ -1,90 +1,62 @@
-// src/notif/notifikasi.service.ts
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
 import { Notifikasi } from '../entity/notifikasi.entity';
-import { User } from '../entity/user.entity';
+import type { INotifikasiRepository } from '../interfaces/notifikasi-repository.interface';
 import { BotService } from '../bot/bot.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class NotifikasiService {
   constructor(
-    @InjectRepository(Notifikasi)
-    private notifRepo: Repository<Notifikasi>,
-    @InjectRepository(User)
-    private userRepo: Repository<User>,
-    private botService: BotService,
+    @Inject('INotifikasiRepository') private repo: INotifikasiRepository,
+    private readonly botService: BotService,
+    private readonly supabaseService: SupabaseService,
   ) {}
 
-  async findAll(tenantId: number): Promise<Notifikasi[]> {
-    return this.notifRepo.find({
-      where: { tenantId },
-      order: { id: 'DESC' },
-    });
+  async findAll(tenantId: string): Promise<Notifikasi[]> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    return this.repo.findAll(tenantId);
   }
 
-  async create(data: Partial<Notifikasi>, tenantId: number): Promise<Notifikasi> {
-    const item = this.notifRepo.create({ ...data, tenantId });
-    const saved = await this.notifRepo.save(item);
-
-    if (data.pesan && data.target) {
-      await this.sendBroadcast(data.target, data.pesan, data.judul, tenantId);
-    }
-
-    return saved;
+  async create(data: Partial<Notifikasi>, tenantId: string): Promise<Notifikasi> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    return this.repo.create(data, tenantId);
   }
 
-  async update(id: number, data: Partial<Notifikasi>, tenantId: number): Promise<void> {
-    await this.notifRepo.update({ id, tenantId }, data);
+  async send(data: Partial<Notifikasi> & { sendNow?: boolean }, tenantId: string) {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+
+    const notification = await this.repo.create(data, tenantId);
+    if (data.via?.toLowerCase() !== 'whatsapp' || data.sendNow === false) {
+      return { notification, sent: 0 };
+    }
+
+    const client = this.supabaseService.getClient();
+    let query = client.from('jemaat').select('telepon').eq('tenant_id', tenantId);
+    if (data.target && !['Semua Jemaat', 'Jemaat Aktif'].includes(data.target)) {
+      if (/^\+?[0-9]{8,15}$/.test(data.target)) {
+        await this.botService.sendMessageToContact(data.target, data.pesan ?? '');
+        return { notification, sent: 1 };
+      }
+    }
+    if (data.target === 'Jemaat Aktif') query = query.eq('status', 'Aktif');
+
+    const { data: recipients, error } = await query;
+    if (error) throw new Error(`Gagal mengambil penerima notifikasi: ${error.message}`);
+
+    const phoneNumbers = (recipients ?? [])
+      .map((recipient: any) => recipient.telepon)
+      .filter((phone: any): phone is string => Boolean(phone));
+    await this.botService.sendBroadcast(phoneNumbers, data.pesan ?? '');
+    return { notification, sent: phoneNumbers.length };
   }
 
-  async remove(id: number, tenantId: number): Promise<void> {
-    await this.notifRepo.delete({ id, tenantId });
+  async update(id: string, data: Partial<Notifikasi>, tenantId: string): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.repo.update(id, data, tenantId);
   }
 
-  // ---------- FUNGSI BROADCAST ----------
-  private async sendBroadcast(target: string, message: string, title?: string, tenantId?: number) {
-    let users: User[] = [];
-
-    // 🚀 PERBAIKAN UTAMA: Tambahkan relations: { jemaat: true } 
-    // agar kita bisa mengakses nomor telepon dan status dari tabel profil Jemaat.
-    
-    if (target === 'Semua Jemaat') {
-      users = await this.userRepo.find({
-        where: { tenantId },
-        relations: { jemaat: true },
-      });
-    } else if (target === 'Pelayan') {
-      users = await this.userRepo.find({
-        where: { role: 'pelayan', tenantId },
-        relations: { jemaat: true },
-      });
-    } else if (target === 'Jemaat Aktif') {
-      users = await this.userRepo.find({
-        where: { tenantId, jemaat: { status: 'Aktif' } },
-        relations: { jemaat: true },
-      });
-    }
-
-    // 🚀 PERBAIKAN: Ambil no telepon lewat objek jemaat (u.jemaat?.telepon)
-    const phoneNumbers = users
-      .map((u) => u.jemaat?.telepon)
-      .filter((tel): tel is string => !!tel && tel.length > 0);
-
-    if (phoneNumbers.length === 0) {
-      console.log('⚠️ Tidak ada nomor HP yang valid untuk dikirim.');
-      return;
-    }
-
-    const fullMessage = `📢 *${title || 'Notifikasi'}*\n\n${message}`;
-
-    try {
-      await this.botService.sendBroadcast(phoneNumbers, fullMessage);
-      console.log(
-        `✅ Broadcast berhasil dikirim ke ${phoneNumbers.length} penerima.`,
-      );
-    } catch (error) {
-      console.error('❌ Gagal mengirim broadcast:', error);
-    }
+  async remove(id: string, tenantId: string): Promise<void> {
+    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
+    await this.repo.remove(id, tenantId);
   }
 }

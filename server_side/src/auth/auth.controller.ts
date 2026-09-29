@@ -39,6 +39,8 @@ export class AuthController {
   async getProfile(@Request() req) {
     const { password, ...user } = req.user;
     
+    console.log('[Auth] Profile requested for user:', { id: user.id, email: user.email, role: user.role, tenantId: user.tenantId });
+    
     // Kirim informasi subdomain gereja induk untuk validasi layout frontend
     const churchSubdomain = await this.authService.getChurchSubdomain(user.tenantId);
     
@@ -46,5 +48,10 @@ export class AuthController {
       ...user,
       churchSubdomain,
     };
+  }
+
+  @Post('sso-login')
+  async ssoLogin(@Body() body: any) {
+    return this.authService.ssoLogin(body);
   }
 }

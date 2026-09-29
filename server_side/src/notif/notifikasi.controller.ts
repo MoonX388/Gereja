@@ -29,15 +29,20 @@ export class NotifikasiController {
     return this.notifService.create(data, req.user.tenantId);
   }
 
+  @Post('send')
+  async send(@Body() data: Partial<Notifikasi> & { sendNow?: boolean }, @Request() req: any) {
+    return this.notifService.send(data, req.user.tenantId);
+  }
+
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<Notifikasi>, @Request() req: any) {
-    await this.notifService.update(Number(id), data, req.user.tenantId);
+    await this.notifService.update(id, data, req.user.tenantId);
     return { message: 'Data notifikasi diperbarui' };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string, @Request() req: any) {
-    await this.notifService.remove(Number(id), req.user.tenantId);
+    await this.notifService.remove(id, req.user.tenantId);
     return { message: 'Data notifikasi dihapus' };
   }
 }

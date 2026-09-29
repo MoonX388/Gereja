@@ -1,36 +1,37 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Inject, Request } from '@nestjs/common';
 import { Inventaris } from '../entity/inventaris.entity';
+import type { IInventarisRepository } from '../interfaces/inventaris-repository.interface';
+import { BaseService } from '../common/base.service';
 
 @Injectable()
-export class InventarisService {
+export class InventarisService extends BaseService {
   constructor(
-    @InjectRepository(Inventaris)
-    private inventarisRepo: Repository<Inventaris>,
-  ) {}
-
-  async findAll(tenantId: number): Promise<Inventaris[]> {
-    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    return this.inventarisRepo.find({
-      where: { tenantId },
-      order: { id: 'DESC' },
-    });
+    @Inject('IInventarisRepository') private repo: IInventarisRepository,
+  ) {
+    super();
   }
 
-  async create(data: Partial<Inventaris>, tenantId: number): Promise<Inventaris> {
-    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    const item = this.inventarisRepo.create({ ...data, tenantId });
-    return this.inventarisRepo.save(item);
+  async findAll(tenantId: string | null, @Request() req?: any): Promise<Inventaris[]> {
+    this.validateTenantAccess(tenantId, req?.user);
+    if (!tenantId) return [];
+    return this.repo.findAll(tenantId);
   }
 
-  async update(id: number, data: Partial<Inventaris>, tenantId: number): Promise<void> {
-    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.inventarisRepo.update({ id, tenantId }, data);
+  async create(data: Partial<Inventaris>, tenantId: string | null, @Request() req?: any): Promise<Inventaris> {
+    this.validateTenantAccess(tenantId, req?.user);
+    if (!tenantId) throw new Error('Platform users cannot create tenant resources');
+    return this.repo.create(data, tenantId);
   }
 
-  async remove(id: number, tenantId: number): Promise<void> {
-    if (!tenantId) throw new UnauthorizedException('Tenant tidak valid');
-    await this.inventarisRepo.delete({ id, tenantId });
+  async update(id: string, data: Partial<Inventaris>, tenantId: string | null, @Request() req?: any): Promise<void> {
+    this.validateTenantAccess(tenantId, req?.user);
+    if (!tenantId) throw new Error('Platform users cannot update tenant resources');
+    await this.repo.update(id, data, tenantId);
+  }
+
+  async remove(id: string, tenantId: string | null, @Request() req?: any): Promise<void> {
+    this.validateTenantAccess(tenantId, req?.user);
+    if (!tenantId) throw new Error('Platform users cannot delete tenant resources');
+    await this.repo.remove(id, tenantId);
   }
 }
