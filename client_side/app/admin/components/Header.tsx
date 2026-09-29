@@ -103,7 +103,7 @@ export default function Header({
           const importedRows = (rows as Array<Record<string, unknown>>).map((row) => {
             const record = row as Record<string, unknown>;
             return {
-              id: Number(record.id) || 0,
+              id: String(record.id),
               nama: String(record.nama || ''),
               gender: String(record.gender || 'Pria'),
               tempatLahir: String(record.tempatLahir || ''),

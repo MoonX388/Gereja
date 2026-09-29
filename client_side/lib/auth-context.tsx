@@ -88,8 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setAuthToken(token);
     api.get('/auth/profile')
-      .then(res => setUser(res.data))
-      .catch(() => clearAuthToken())
+      .then(res => {
+        console.log('[Auth] Profile loaded:', res.data);
+        setUser(res.data);
+      })
+      .catch(err => {
+        console.error('[Auth] Profile fetch failed:', err);
+        clearAuthToken();
+      })
       .finally(() => setLoading(false));
   }, []);
 

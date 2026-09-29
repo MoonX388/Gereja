@@ -17,6 +17,7 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose:
     { label: 'Notifikasi', icon: 'fa-bell', page: 'notifikasi' },
     { label: 'Dokumen', icon: 'fa-file-alt', page: 'dokumen' },
     { label: 'Pengaturan', icon: 'fa-gear', page: 'pengaturan' },
+    { label: 'Akses User', icon: 'fa-user-shield', page: 'akses-user' },
   ];
 
   return (

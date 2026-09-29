@@ -26,7 +26,7 @@ const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'; // Gunakan varia
 // ============================================================
 
 export interface Jemaat {
-  id: number;
+  id: string;
   nama: string;
   gender: string;
   tempatLahir: string;
@@ -43,7 +43,7 @@ export interface Jemaat {
 }
 
 export interface Pelayan {
-  id: number;
+  id: string;
   nama: string;
   jabatan: string;
   departemen: string;
@@ -51,7 +51,7 @@ export interface Pelayan {
 }
 
 export interface Keuangan {
-  id: number;
+  id: string;
   jenis: 'masuk' | 'keluar';
   kategori: string;
   jumlah: number;
@@ -60,7 +60,7 @@ export interface Keuangan {
 }
 
 export interface Inventaris {
-  id: number;
+  id: string;
   nama: string;
   kategori: string;
   jumlah: number;
@@ -70,7 +70,7 @@ export interface Inventaris {
 }
 
 export interface Keluarga {
-  id: number;
+  id: string;
   noKK: string;
   kepala: string;
   alamat: string;
@@ -78,7 +78,7 @@ export interface Keluarga {
 }
 
 export interface Jadwal {
-  id: number;
+  id: string;
   nama: string;
   tanggal: string;
   waktu: string;
@@ -96,7 +96,7 @@ export interface Absensi {
 }
 
 export interface Notifikasi {
-  id: number;
+  id: string;
   judul: string;
   pesan: string;
   target: string;
@@ -152,28 +152,28 @@ interface AdminContextType {
   currentPage: string;
   setCurrentPage: (page: string) => void;
   addJemaat: (item: Omit<Jemaat, 'id'>) => Promise<void>;
-  updateJemaat: (id: number, item: Omit<Jemaat, 'id'>) => Promise<void>;
-  deleteJemaat: (id: number) => Promise<void>;
+  updateJemaat: (id: string, item: Omit<Jemaat, 'id'>) => Promise<void>;
+  deleteJemaat: (id: string) => Promise<void>;
   addPelayan: (item: Omit<Pelayan, 'id'>) => Promise<void>;
-  updatePelayan: (id: number, item: Omit<Pelayan, 'id'>) => Promise<void>;
-  deletePelayan: (id: number) => Promise<void>;
+  updatePelayan: (id: string, item: Omit<Pelayan, 'id'>) => Promise<void>;
+  deletePelayan: (id: string) => Promise<void>;
   addKeuangan: (item: Omit<Keuangan, 'id'>) => Promise<void>;
-  updateKeuangan: (id: number, item: Omit<Keuangan, 'id'>) => Promise<void>;
-  deleteKeuangan: (id: number) => Promise<void>;
+  updateKeuangan: (id: string, item: Omit<Keuangan, 'id'>) => Promise<void>;
+  deleteKeuangan: (id: string) => Promise<void>;
   addInventaris: (item: Omit<Inventaris, 'id'>) => Promise<void>;
-  updateInventaris: (id: number, item: Omit<Inventaris, 'id'>) => Promise<void>;
-  deleteInventaris: (id: number) => Promise<void>;
+  updateInventaris: (id: string, item: Omit<Inventaris, 'id'>) => Promise<void>;
+  deleteInventaris: (id: string) => Promise<void>;
   addKeluarga: (item: Omit<Keluarga, 'id'>) => Promise<void>;
-  updateKeluarga: (id: number, item: Omit<Keluarga, 'id'>) => Promise<void>;
-  deleteKeluarga: (id: number) => Promise<void>;
+  updateKeluarga: (id: string, item: Omit<Keluarga, 'id'>) => Promise<void>;
+  deleteKeluarga: (id: string) => Promise<void>;
   addJadwal: (item: Omit<Jadwal, 'id'>) => Promise<void>;
-  updateJadwal: (id: number, item: Omit<Jadwal, 'id'>) => Promise<void>;
-  deleteJadwal: (id: number) => Promise<void>;
+  updateJadwal: (id: string, item: Omit<Jadwal, 'id'>) => Promise<void>;
+  deleteJadwal: (id: string) => Promise<void>;
   addAbsensi: (item: Omit<Absensi, 'id'>) => void;
   deleteAbsensi: (id: number) => void;
   addNotifikasi: (item: Omit<Notifikasi, 'id'>) => Promise<void>;
-  updateNotifikasi?: (id: number, item: Omit<Notifikasi, 'id'>) => Promise<void>;
-  deleteNotifikasi: (id: number) => Promise<void>;
+  updateNotifikasi?: (id: string, item: Omit<Notifikasi, 'id'>) => Promise<void>;
+  deleteNotifikasi: (id: string) => Promise<void>;
   updateSettings: (newSettings: Partial<Settings>) => void;
   importData: (data: Partial<AdminBackupData>) => void;
 }
@@ -242,8 +242,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.get(url);
       setState(res.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Gagal load ${url}:`, error);
+      if (error.response?.status === 401) {
+        console.error('Unauthorized: Token tidak valid atau kadaluarsa');
+      } else if (error.response?.status === 403) {
+        console.error('Forbidden: Tidak memiliki akses ke resource ini');
+      } else if (error.response?.status === 500) {
+        console.error('Server Error: Backend mengalami error');
+      }
       if (storageKey) {
         const saved = localStorage.getItem(storageKey);
         if (saved) setState(JSON.parse(saved));
@@ -253,13 +260,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isDummyModeEnabled()) {
-      setJemaat(dummyJemaat as Jemaat[]);
-      setPelayan(dummyPelayan as Pelayan[]);
-      setKeuangan(dummyKeuangan as Keuangan[]);
-      setInventaris(dummyInventaris as Inventaris[]);
-      setKeluarga(dummyKeluarga as Keluarga[]);
-      setJadwal(dummyJadwal as Jadwal[]);
-      setNotifikasi(dummyNotifikasi as Notifikasi[]);
+      setJemaat(dummyJemaat.map((item) => ({ ...item, id: String(item.id) })));
+      setPelayan(dummyPelayan.map((item) => ({ ...item, id: String(item.id) })));
+      setKeuangan(dummyKeuangan.map((item) => ({ ...item, id: String(item.id) })) as Keuangan[]);
+      setInventaris(dummyInventaris.map((item) => ({ ...item, id: String(item.id) })));
+      setKeluarga(dummyKeluarga.map((item) => ({ ...item, id: String(item.id) })));
+      setJadwal(dummyJadwal.map((item) => ({ ...item, id: String(item.id) })));
+      setNotifikasi(dummyNotifikasi.map((item) => ({ ...item, id: String(item.id) })));
       setAbsensi(dummyAbsensi as Absensi[]);
       setSettings({ ...DEFAULT_SETTINGS, ...dummySettings });
       return;
@@ -273,6 +280,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     loadData('/keluarga', setKeluarga);
     loadData('/jadwal', setJadwal);
     loadData('/notifikasi', setNotifikasi);
+    api.get('/settings')
+      .then((res) => {
+        const updatedSettings = { ...DEFAULT_SETTINGS, ...res.data };
+        setSettings(updatedSettings);
+        saveToLocal(STORAGE_KEYS.settings, updatedSettings);
+      })
+      .catch((error) => console.error('Gagal load /settings:', error));
   }, []);
 
   const saveToLocal = (key: string, data: unknown) => {
@@ -291,7 +305,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal tambah jemaat:', error);
     }
   };
-  const updateJemaat = async (id: number, item: Omit<Jemaat, 'id'>) => {
+  const updateJemaat = async (id: string, item: Omit<Jemaat, 'id'>) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.put(`/jemaat/${id}`, item);
@@ -300,7 +314,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal update jemaat:', error);
     }
   };
-  const deleteJemaat = async (id: number) => {
+  const deleteJemaat = async (id: string) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/jemaat/${id}`);
@@ -319,7 +333,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal tambah pelayan:', error);
     }
   };
-  const updatePelayan = async (id: number, item: Omit<Pelayan, 'id'>) => {
+  const updatePelayan = async (id: string, item: Omit<Pelayan, 'id'>) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.put(`/pelayan/${id}`, item);
@@ -328,7 +342,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal update pelayan:', error);
     }
   };
-  const deletePelayan = async (id: number) => {
+  const deletePelayan = async (id: string) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/pelayan/${id}`);
@@ -347,7 +361,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal tambah keuangan:', error);
     }
   };
-  const updateKeuangan = async (id: number, item: Omit<Keuangan, 'id'>) => {
+  const updateKeuangan = async (id: string, item: Omit<Keuangan, 'id'>) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.put(`/keuangan/${id}`, item);
@@ -356,7 +370,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal update keuangan:', error);
     }
   };
-  const deleteKeuangan = async (id: number) => {
+  const deleteKeuangan = async (id: string) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/keuangan/${id}`);
@@ -375,7 +389,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal tambah inventaris:', error);
     }
   };
-  const updateInventaris = async (id: number, item: Omit<Inventaris, 'id'>) => {
+  const updateInventaris = async (id: string, item: Omit<Inventaris, 'id'>) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.put(`/inventaris/${id}`, item);
@@ -384,7 +398,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal update inventaris:', error);
     }
   };
-  const deleteInventaris = async (id: number) => {
+  const deleteInventaris = async (id: string) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/inventaris/${id}`);
@@ -403,7 +417,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal tambah keluarga:', error);
     }
   };
-  const updateKeluarga = async (id: number, item: Omit<Keluarga, 'id'>) => {
+  const updateKeluarga = async (id: string, item: Omit<Keluarga, 'id'>) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.put(`/keluarga/${id}`, item);
@@ -412,7 +426,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal update keluarga:', error);
     }
   };
-  const deleteKeluarga = async (id: number) => {
+  const deleteKeluarga = async (id: string) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/keluarga/${id}`);
@@ -431,7 +445,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal tambah jadwal:', error);
     }
   };
-  const updateJadwal = async (id: number, item: Omit<Jadwal, 'id'>) => {
+  const updateJadwal = async (id: string, item: Omit<Jadwal, 'id'>) => {
     if (isDummyModeEnabled()) {
       setJadwal((prev) => prev.map((j) => (j.id === id ? { ...item, id } : j)).sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime()));
       return;
@@ -443,7 +457,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal update jadwal:', error);
     }
   };
-  const deleteJadwal = async (id: number) => {
+  const deleteJadwal = async (id: string) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/jadwal/${id}`);
@@ -462,7 +476,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       console.error('Gagal tambah notifikasi:', error);
     }
   };
-  const deleteNotifikasi = async (id: number) => {
+  const deleteNotifikasi = async (id: string) => {
     if (isDummyModeEnabled()) return;
     try {
       await api.delete(`/notifikasi/${id}`);
@@ -488,6 +502,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     saveToLocal(STORAGE_KEYS.settings, updated);
+    void api.patch('/settings', newSettings).catch((error) => {
+      console.error('Gagal menyimpan /settings:', error);
+    });
   };
 
   const importData = (data: Partial<AdminBackupData>) => {

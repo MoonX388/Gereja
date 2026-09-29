@@ -27,11 +27,11 @@ export default function PelayanGereja() {
   
   // State Kontrol Modal Formulir Data
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   // State Kontrol Modal Hapus Pemusnahan Data
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [targetDeleteId, setTargetDeleteId] = useState<number | null>(null);
+  const [targetDeleteId, setTargetDeleteId] = useState<string | null>(null);
   const [targetDeleteNama, setTargetDeleteNama] = useState('');
 
   const [formData, setFormData] = useState({
@@ -74,7 +74,7 @@ export default function PelayanGereja() {
   };
 
   // Pemicu awal sebelum membuka popup hapus data pelayan
-  const triggerDeleteConfirmation = (id: number, nama: string) => {
+  const triggerDeleteConfirmation = (id: string, nama: string) => {
     setTargetDeleteId(id);
     setTargetDeleteNama(nama);
     setIsDeleteModalOpen(true);

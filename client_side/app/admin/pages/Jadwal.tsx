@@ -9,7 +9,7 @@ export default function Jadwal() {
   const { showToast } = useToast();
   const { jadwal, pelayan, addJadwal, updateJadwal, deleteJadwal } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nama: '',
     tanggal: '',

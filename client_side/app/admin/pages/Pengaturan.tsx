@@ -27,27 +27,30 @@ export default function Pengaturan() {
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
 
   // 🚀 Memuat data pendaftaran awal ke form pengaturan profil
+  // 🚀 Memuat data pendaftaran awal ke form pengaturan profil
   useEffect(() => {
-  const fetchProfilGereja = async () => {
-    try {
-      // Kita tembak API dashboard yang sudah terbukti sukses di halaman data jemaat
-      const res = await api.get('/jemaat/dashboard');
-      
-      if (res.data?.subowner) {
-        setLocalSettings((prev) => ({
-          ...prev,
-          namaGereja: res.data.subowner.namaGereja || "", // 🏛️ Mengambil namaGereja asli dari tabel users
-          email: prev.email || res.data.subowner.email || "", // 📧 Mengambil email asli
-          username: res.data.subowner.username || user?.username || "",
-        }));
-      }
-    } catch (error) {
-      console.error("Gagal memuat data profil gereja di pengaturan:", error);
-    }
-  };
+    const fetchProfilGereja = async () => {
+      try {
+        const res = await api.get('/jemaat/dashboard');
+        
+        // 👇 UBAH DI SINI: Gunakan 'tenant' sesuai balasan dari backend NestJS
+        const gerejaInfo = res.data?.tenant || res.data?.subowner; 
 
-  fetchProfilGereja();
-}, [user]);
+        if (gerejaInfo) {
+          setLocalSettings((prev) => ({
+            ...prev,
+            namaGereja: gerejaInfo.namaGereja || "", 
+            email: prev.email || gerejaInfo.email || "",
+            username: gerejaInfo.username || user?.username || "",
+          }));
+        }
+      } catch (error) {
+        console.error("Gagal memuat data profil gereja di pengaturan:", error);
+      }
+    };
+
+    fetchProfilGereja();
+  }, [user]);
 
   // Ambil token WA
   useEffect(() => {

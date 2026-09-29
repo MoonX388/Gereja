@@ -10,7 +10,7 @@ export default function Keuangan() {
   const { keuangan, addKeuangan, updateKeuangan, deleteKeuangan } = useAdmin();
   const [filter, setFilter] = useState('semua');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     jenis: 'masuk' as 'masuk' | 'keluar',
     kategori: 'Persembahan',

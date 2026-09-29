@@ -22,33 +22,46 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
       } else {
         api.get('/auth/profile')
           .then(res => {
+            console.log('[AdminLayout] Profile loaded:', res.data);
+            
             // DETEKSI URL: Ambil string nama subdomain browser saat ini
             const hostname = typeof window !== "undefined" ? window.location.hostname : "";
             const parts = hostname.split(".");
             const currentSubdomain = parts.length > 2 && parts[0] !== 'www' && parts[0] !== 'api' ? parts[0] : "";
 
-            // 🛡️ VALIDASI 1: Izinkan Staf Lokal ('admin') DAN Owner Utama ('admin_gereja'/'sub_owner') untuk masuk aplikasi
-            const hasValidRole = res.data.role === 'admin' || res.data.role === 'admin_gereja' || res.data.role === 'sub_owner';
+            // 🛡️ VALIDASI 1: Role hierarchy baru (case-insensitive)
+            // 'owner' - platform owner, full access
+            // 'admin' - platform staff/moderator
+            // 'admin_tenant' - church admin
+            // 'user' - church member/staff
+            const normalizedRole = res.data.role?.toLowerCase() || '';
+            const allowedRoles = ['owner', 'admin', 'admin_tenant', 'user', 'admin_gereja', 'sub_owner', 'super_admin', 'superadmin'];
             
-            if (!hasValidRole && res.data.role !== 'super_admin') {
+            if (!allowedRoles.includes(normalizedRole)) {
+              console.log('[AdminLayout] Invalid role:', normalizedRole);
               logout();
               router.push('/error/403');
               return;
             }
 
             // 🛡️ VALIDASI 2: Kunci wilayah kerja agar tidak bisa melompat ke subdomain milik penyewa lain
-            // Untuk owner utama, subdomain tercatat di res.data.subdomain. Untuk staf, tercatat di churchSubdomain.
+            // Platform roles (owner, admin) tidak dibatasi subdomain
+            // Tenant roles (admin_tenant, user) dibatasi subdomain
             const allowedSubdomain = res.data.churchSubdomain || res.data.subdomain;
+            const isPlatformRole = ['owner', 'admin'].includes(normalizedRole);
             
-            if (currentSubdomain && allowedSubdomain && allowedSubdomain !== currentSubdomain && res.data.role !== 'super_admin') {
+            if (!isPlatformRole && currentSubdomain && allowedSubdomain && allowedSubdomain !== currentSubdomain) {
+              console.log('[AdminLayout] Subdomain mismatch:', { currentSubdomain, allowedSubdomain });
               logout();
               router.push('/login'); 
               return;
             }
 
+            console.log('[AdminLayout] Access verified for role:', normalizedRole);
             setIsAccessVerified(true);
           })
-          .catch(() => {
+          .catch(err => {
+            console.error('[AdminLayout] Profile fetch failed:', err);
             logout();
             router.push('/error/500');
           });

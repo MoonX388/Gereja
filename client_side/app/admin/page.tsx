@@ -12,6 +12,7 @@ import Absensi from './pages/Absensi';
 import Notifikasi from './pages/Notifikasi';
 import Dokumen from './pages/Dokumen';
 import Pengaturan from './pages/Pengaturan';
+import AksesUser from './pages/AksesUser';
 
 export default function AdminPage() {
   const { currentPage } = useAdmin();
@@ -40,6 +41,8 @@ export default function AdminPage() {
         return <Dokumen />;
       case 'pengaturan':
         return <Pengaturan />;
+      case 'akses-user':
+        return <AksesUser />;
       default:
         return <Dashboard />;
     }

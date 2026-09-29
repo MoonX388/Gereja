@@ -45,7 +45,7 @@ export default function Dashboard() {
 
   const stats = [
     { label: 'Jemaat', value: jemaat.length, icon: 'fa-users', color: 'bg-blue-100 text-blue-700' },
-    { label: 'Pelayan', value: pelayan.length, icon: 'fa-user-tie', color: 'bg-green-100 text-green-700' },
+    { label: 'User', value: pelayan.length, icon: 'fa-user-tie', color: 'bg-green-100 text-green-700' },
     { label: 'Jadwal', value: totalJadwal, icon: 'fa-calendar-check', color: 'bg-amber-100 text-amber-700' },
     { label: 'Saldo Kas', value: `Rp ${saldo.toLocaleString('id-ID')}`, icon: 'fa-coins', color: 'bg-purple-100 text-purple-700' },
     { label: 'Inventaris', value: inventaris.length, icon: 'fa-box-archive', color: 'bg-red-100 text-red-500' },

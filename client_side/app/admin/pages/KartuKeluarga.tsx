@@ -9,7 +9,7 @@ export default function KartuKeluarga() {
   const { showToast } = useToast();
   const { keluarga, jemaat, addKeluarga, updateKeluarga, deleteKeluarga } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     noKK: '',
     kepala: '',

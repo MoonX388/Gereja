@@ -6,13 +6,16 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
   const isLoggedIn = !!token;
 
+  console.log('[Middleware] Request:', request.nextUrl.pathname, 'isLoggedIn:', isLoggedIn);
+
   // Proteksi semua rute /admin/*
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!isLoggedIn) {
+      console.log('[Middleware] No token, redirecting to login');
       return NextResponse.redirect(new URL('/login', request.url));
     }
-    // Optional: cek role dari token (jika disimpan di cookie/JWT)
-    // Jika role bukan admin → redirect ke /error/403
+    // Token ada, biarkan frontend handle role check via auth-context
+    console.log('[Middleware] Token exists, allowing access');
   }
 
   // Bisa tambahkan proteksi untuk rute lain jika perlu
