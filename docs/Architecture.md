@@ -1,4 +1,4 @@
-# System Architecture — GPanel
+# System Architecture - GPanel
 
 ## Overview
 
