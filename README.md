@@ -1,4 +1,4 @@
-# 🏰 Gereja Pintar — Sistem Manajemen Gereja Terpadu
+# 🏰 Gereja Pintar - Sistem Manajemen Gereja Terpadu
 
 <div align="center">
 
