@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { useAdmin, Inventaris as InventarisType } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
+import ConfirmationModalPortal from '../components/ConfirmationModalPortal';
 
 export default function Inventaris() {
   const { showToast } = useToast();
   const { inventaris, addInventaris, updateInventaris, deleteInventaris } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nama: '',
     kategori: 'Peralatan Ibadah',
@@ -52,6 +54,12 @@ export default function Inventaris() {
     setIsModalOpen(false);
   };
 
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    await deleteInventaris(pendingDeleteId);
+    showToast('Inventaris berhasil dihapus!', 'success');
+  };
+
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
@@ -71,7 +79,7 @@ export default function Inventaris() {
         </div>
         <div className="p-4 overflow-x-auto">
           {inventaris.length > 0 ? (
-            <table className="w-full text-sm modern-table">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead>
                 <tr>
                   <th>Nama Barang</th>
@@ -86,17 +94,17 @@ export default function Inventaris() {
               <tbody>
                 {inventaris.map((item) => (
                   <tr key={item.id}>
-                    <td className="font-semibold">{item.nama}</td>
-                    <td>{item.kategori}</td>
-                    <td>{item.jumlah}</td>
-                    <td>Rp {item.harga.toLocaleString('id-ID')}</td>
-                    <td>{item.tahun}</td>
-                    <td>
+                    <td data-label="Nama Barang" className="font-semibold">{item.nama}</td>
+                    <td data-label="Kategori">{item.kategori}</td>
+                    <td data-label="Jumlah">{item.jumlah}</td>
+                    <td data-label="Harga">Rp {item.harga.toLocaleString('id-ID')}</td>
+                    <td data-label="Tahun">{item.tahun}</td>
+                    <td data-label="Kondisi">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.kondisi === 'Baik' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                         {item.kondisi}
                       </span>
                     </td>
-                    <td className="text-center space-x-2">
+                    <td data-label="Aksi" className="text-center space-x-2">
                       <button
                         onClick={() => handleOpenModal(item)}
                         className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"
@@ -104,12 +112,7 @@ export default function Inventaris() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={async () => {
-                          if (confirm('Hapus?')) {
-                            await deleteInventaris(item.id);
-                            showToast('Inventaris berhasil dihapus!', 'success');
-                          }
-                        }}
+                        onClick={() => setPendingDeleteId(item.id)}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -201,6 +204,16 @@ export default function Inventaris() {
           </div>
         </div>
       </Modal>
+      <ConfirmationModalPortal
+        isOpen={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Hapus inventaris?"
+        description="Data inventaris yang dihapus tidak dapat dipulihkan."
+        confirmText="Ya, Hapus"
+        cancelText="Tidak"
+        variant="danger"
+      />
     </div>
   );
 }

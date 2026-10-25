@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useAdmin, Keuangan as KeuanganType } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
+import ConfirmationModalPortal from '../components/ConfirmationModalPortal';
 
 export default function Keuangan() {
   const { showToast } = useToast();
@@ -11,6 +12,7 @@ export default function Keuangan() {
   const [filter, setFilter] = useState('semua');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     jenis: 'masuk' as 'masuk' | 'keluar',
     kategori: 'Persembahan',
@@ -60,6 +62,12 @@ export default function Keuangan() {
       showToast('Transaksi baru berhasil ditambahkan!', 'success');
     }
     setIsModalOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    await deleteKeuangan(pendingDeleteId);
+    showToast('Transaksi berhasil dihapus!', 'success');
   };
 
   return (
@@ -131,7 +139,7 @@ export default function Keuangan() {
         </div>
         <div className="p-4 overflow-x-auto">
           {filteredKeuangan.length > 0 ? (
-            <table className="w-full text-sm modern-table">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead>
                 <tr>
                   <th>Tanggal</th>
@@ -145,19 +153,19 @@ export default function Keuangan() {
               <tbody>
                 {filteredKeuangan.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.tanggal}</td>
-                    <td>
+                    <td data-label="Tanggal">{item.tanggal}</td>
+                    <td data-label="Jenis">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.jenis === 'masuk' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                         <i className={`fa-solid fa-arrow-${item.jenis === 'masuk' ? 'down' : 'up'} mr-1`}></i>
                         {item.jenis === 'masuk' ? 'Masuk' : 'Keluar'}
                       </span>
                     </td>
-                    <td>{item.kategori}</td>
-                    <td className={`font-bold ${item.jenis === 'masuk' ? 'text-green-700' : 'text-red-600'}`}>
+                    <td data-label="Kategori">{item.kategori}</td>
+                    <td data-label="Jumlah" className={`font-bold ${item.jenis === 'masuk' ? 'text-green-700' : 'text-red-600'}`}>
                       Rp {item.jumlah.toLocaleString('id-ID')}
                     </td>
-                    <td className="text-xs">{item.deskripsi || '-'}</td>
-                    <td className="text-center space-x-2">
+                    <td data-label="Deskripsi" className="text-xs">{item.deskripsi || '-'}</td>
+                    <td data-label="Aksi" className="text-center space-x-2">
                       <button
                         onClick={() => handleOpenModal(item)}
                         className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"
@@ -165,12 +173,7 @@ export default function Keuangan() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={async () => {
-                          if (confirm('Hapus?')) {
-                            await deleteKeuangan(item.id);
-                            showToast('Transaksi berhasil dihapus!', 'success');
-                          }
-                        }}
+                        onClick={() => setPendingDeleteId(item.id)}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -250,6 +253,16 @@ export default function Keuangan() {
           </div>
         </div>
       </Modal>
+      <ConfirmationModalPortal
+        isOpen={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Hapus transaksi?"
+        description="Transaksi keuangan yang dihapus tidak dapat dipulihkan."
+        confirmText="Ya, Hapus"
+        cancelText="Tidak"
+        variant="danger"
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./motion.css";
 
 :root {
   --background: #ffffff;
@@ -530,4 +531,13 @@ body {
 
 .banter-loader__box:nth-child(9) {
   animation: moveBox-9 4s infinite;
+}
+
+/* Responsive Table Design (Card-based layout on mobile) */
+@media (max-width: 640px) {
+  .responsive-table thead { display: none; }
+  .responsive-table tr { display: block; margin-bottom: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: white; }
+  .responsive-table td { display: flex; justify-content: space-between; padding: 0.5rem 1rem; border-bottom: 1px solid #e5e7eb; }
+  .responsive-table td:last-child { border-bottom: 0; }
+  .responsive-table td::before { content: attr(data-label); font-weight: 600; color: #4b5563; }
 }

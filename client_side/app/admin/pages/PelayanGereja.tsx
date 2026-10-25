@@ -24,6 +24,10 @@ const JABATAN_ORDER = {
 export default function PelayanGereja() {
   const { showToast } = useToast();
   const { pelayan, jemaat, addPelayan, updatePelayan, deletePelayan } = useAdmin();
+
+  // Debug: Log jemaat data
+  console.log('📊 Jemaat data in PelayanGereja:', jemaat);
+  console.log('📊 Jemaat count:', jemaat.length);
   
   // State Kontrol Modal Formulir Data
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,6 +43,7 @@ export default function PelayanGereja() {
     jabatan: 'Ketua Majelis', // Mengubah default value awal ke Ketua Majelis
     departemen: 'Umum',
     status: 'Aktif',
+    jemaatId: '',
   });
 
   // Melakukan pengurutan list berdasarkan bobot index JABATAN_ORDER
@@ -50,10 +55,10 @@ export default function PelayanGereja() {
   const handleOpenModal = (item?: PelayanType) => {
     if (item) {
       setEditingId(item.id);
-      setFormData({ nama: item.nama, jabatan: item.jabatan, departemen: item.departemen, status: item.status });
+      setFormData({ nama: item.nama, jabatan: item.jabatan, departemen: item.departemen, status: item.status, jemaatId: item.jemaatId || '' });
     } else {
       setEditingId(null);
-      setFormData({ nama: '', jabatan: 'Ketua Majelis', departemen: 'Umum', status: 'Aktif' });
+      setFormData({ nama: '', jabatan: 'Ketua Majelis', departemen: 'Umum', status: 'Aktif', jemaatId: '' });
     }
     setIsModalOpen(true);
   };
@@ -114,7 +119,7 @@ export default function PelayanGereja() {
         
         <div className="p-4 overflow-x-auto">
           {sortedPelayan.length > 0 ? (
-            <table className="w-full text-sm modern-table">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead>
                 <tr className="bg-gray-50/70 text-gray-500 font-medium text-left">
                   <th className="py-3 px-4">Nama Lengkap</th>
@@ -127,19 +132,19 @@ export default function PelayanGereja() {
               <tbody className="divide-y divide-gray-100">
                 {sortedPelayan.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50/40 transition-colors">
-                    <td className="font-semibold py-3.5 px-4 text-gray-900">{item.nama}</td>
-                    <td className="py-3.5 px-4">
+                    <td data-label="Nama Lengkap" className="font-semibold py-3.5 px-4 text-gray-900">{item.nama}</td>
+                    <td data-label="Jabatan Struktural" className="py-3.5 px-4">
                       <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
                         {item.jabatan}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-gray-600">{item.departemen}</td>
-                    <td className="py-3.5 px-4">
+                    <td data-label="Lingkup Bidang / Departemen" className="py-3.5 px-4 text-gray-600">{item.departemen}</td>
+                    <td data-label="Status Keaktifan" className="py-3.5 px-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${item.status === 'Aktif' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-600'}`}>
                         {item.status}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center space-x-1">
+                    <td data-label="Tindakan" className="py-3.5 px-4 text-center space-x-1">
                       <button
                         onClick={() => handleOpenModal(item)}
                         className="text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-colors"
@@ -179,13 +184,20 @@ export default function PelayanGereja() {
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Nama Jemaat</label>
             <select
-              value={formData.nama}
-              onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+              value={formData.jemaatId}
+              onChange={(e) => {
+                const selectedJemaat = jemaat.find(j => j.id === e.target.value);
+                setFormData({
+                  ...formData,
+                  jemaatId: e.target.value,
+                  nama: selectedJemaat?.nama || e.target.options[e.target.selectedIndex].text
+                });
+              }}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             >
               <option value="">-- Hubungkan dengan Nama Jemaat --</option>
               {jemaat.map((j) => (
-                <option key={j.id} value={j.nama}>{j.nama}</option>
+                <option key={j.id} value={j.id}>{j.nama}</option>
               ))}
             </select>
           </div>

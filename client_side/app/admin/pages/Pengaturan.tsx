@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useToast } from "@/app/components/ToastContext";
 import QRCode from "react-qr-code";
+import ConfirmationModalPortal from "../components/ConfirmationModalPortal";
 
 export default function Pengaturan() {
   const { settings, updateSettings } = useAdmin();
@@ -16,7 +17,9 @@ export default function Pengaturan() {
 
   const [newPassword, setNewPassword] = useState("");
   const [activeTab, setActiveTab] = useState("profil");
-  const [localSettings, setLocalSettings] = useState(settings);
+  const [confirmationAction, setConfirmationAction] = useState<"logout" | "reset" | null>(null);
+  const [draftSettings, setDraftSettings] = useState<Partial<typeof settings>>({});
+  const localSettings = { ...settings, ...draftSettings };
 
   // State untuk bot WhatsApp
   const [waToken, setWaToken] = useState("");
@@ -26,79 +29,52 @@ export default function Pengaturan() {
   const [loginMethod, setLoginMethod] = useState<"pairing" | "qr">("pairing");
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
 
-  // 🚀 Memuat data pendaftaran awal ke form pengaturan profil
-  // 🚀 Memuat data pendaftaran awal ke form pengaturan profil
-  useEffect(() => {
-    const fetchProfilGereja = async () => {
-      try {
-        const res = await api.get('/jemaat/dashboard');
-        
-        // 👇 UBAH DI SINI: Gunakan 'tenant' sesuai balasan dari backend NestJS
-        const gerejaInfo = res.data?.tenant || res.data?.subowner; 
-
-        if (gerejaInfo) {
-          setLocalSettings((prev) => ({
-            ...prev,
-            namaGereja: gerejaInfo.namaGereja || "", 
-            email: prev.email || gerejaInfo.email || "",
-            username: gerejaInfo.username || user?.username || "",
-          }));
-        }
-      } catch (error) {
-        console.error("Gagal memuat data profil gereja di pengaturan:", error);
-      }
-    };
-
-    fetchProfilGereja();
-  }, [user]);
-
   // Ambil token WA
   useEffect(() => {
     if (activeTab === "integrasi") {
       const fetchToken = async () => {
         try {
-          let extractedToken = "";
-
-          try {
-            const res = await api.get("/wa/token");
-            if (res.data?.token) extractedToken = res.data.token;
-          } catch {
-            const res = await api.get("/wa/login-url");
-            if (res.data?.loginUrl) {
-              extractedToken = res.data.loginUrl.split("token=")[1] || "";
-            }
-          }
-
-          if (extractedToken) {
-            setWaToken(extractedToken);
-          } else {
-            setBotStatus("❌ Token gagal dimuat.");
-          }
+          const res = await api.get("/wa/token");
+          if (!res.data?.token) throw new Error("Token bot tidak tersedia.");
+          setWaToken(res.data.token);
+          setBotStatus("Token bot berhasil dimuat.");
         } catch (error) {
           console.error("Gagal mengambil token:", error);
-          setBotStatus("❌ Gagal terhubung ke backend NestJS.");
+          const typedError = error as { response?: { data?: { message?: string } }; message?: string };
+          const message = typedError.response?.data?.message || typedError.message || "Gagal terhubung ke backend.";
+          setBotStatus(message);
+          showToast(message, "error");
         }
       };
       fetchToken();
     }
-  }, [activeTab]);
+  }, [activeTab, showToast]);
 
   // Polling QR
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let cancelled = false;
 
     if (activeTab === "integrasi" && loginMethod === "qr") {
       const fetchQr = async () => {
         try {
           const res = await api.get("/wa/qr");
-          if (res.data.qr) {
-            setQrCodeData(res.data.qr);
-          } else {
-            setQrCodeData(null);
-            setBotStatus("⏳ Memuat QR... (Bot mungkin sudah login atau sedang mereset)");
-          }
+          if (cancelled) return;
+          setQrCodeData(res.data?.qr || null);
+          const messages: Record<string, string> = {
+            connected: "WhatsApp sudah terhubung.",
+            qr: "Pindai QR menggunakan WhatsApp.",
+            connecting: "Menunggu QR dari server...",
+            reconnecting: "Menyambungkan ulang ke WhatsApp...",
+            disconnected: "Sesi terputus. Menunggu sesi baru...",
+          };
+          setBotStatus(res.data?.error || messages[res.data?.status] || "Status koneksi tidak diketahui.");
         } catch (error) {
           console.error("Error mengambil QR:", error);
+          if (cancelled) return;
+          setQrCodeData(null);
+          const typedError = error as { response?: { data?: { message?: string } }; message?: string };
+          setBotStatus(typedError.response?.data?.message || typedError.message || "Gagal mengambil QR WhatsApp.");
         }
       };
 
@@ -106,12 +82,23 @@ export default function Pengaturan() {
       interval = setInterval(fetchQr, 5000);
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+    };
   }, [activeTab, loginMethod]);
 
-  const handleSave = (data: Partial<typeof settings>) => {
-    updateSettings(data);
-    showToast("Pengaturan disimpan", "success");
+  const handleSave = async (data: Partial<typeof settings>) => {
+    const settingsData = Object.fromEntries(
+      Object.entries(data).filter(([key]) => !['username', 'password', 'waKey'].includes(key)),
+    ) as Partial<typeof settings>;
+    try {
+      await updateSettings(settingsData);
+      showToast("Pengaturan disimpan", "success");
+    } catch (error: unknown) {
+      const typedError = error as { response?: { data?: { message?: string } }; message?: string };
+      showToast(typedError.response?.data?.message || typedError.message || "Gagal menyimpan pengaturan", "error");
+    }
   };
 
   const handleUpdateAccount = async () => {
@@ -126,6 +113,7 @@ export default function Pengaturan() {
       }
       await api.put(`/users/${user.id}`, payload);
       showToast('Akun berhasil diperbarui!', 'success');
+      setDraftSettings((prev) => ({ ...prev, username: payload.username || prev.username }));
       setNewPassword('');
       await api.get('/auth/profile');
     } catch (error: unknown) {
@@ -135,9 +123,18 @@ export default function Pengaturan() {
   };
 
   const handleLogout = () => {
-    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+    setConfirmationAction("logout");
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmationAction === "logout") {
       localStorage.removeItem("token");
       router.push("/login");
+    }
+
+    if (confirmationAction === "reset") {
+      localStorage.clear();
+      window.location.reload();
     }
   };
 
@@ -156,13 +153,18 @@ export default function Pengaturan() {
       });
       setPairingCode(res.data.code);
       setBotStatus("Masukkan kode ini di WhatsApp perangkat tertaut Anda:");
+      showToast("Kode pairing berhasil diminta", "success");
     } catch (error) {
       console.error("Error Pairing:", error);
-      setBotStatus("❌ Gagal mendapatkan kode pairing. Sesi mungkin error.");
+      const typedError = error as { response?: { data?: { message?: string } }; message?: string };
+      const message = typedError.response?.data?.message || typedError.message || "Gagal mendapatkan kode pairing.";
+      setBotStatus(message);
+      showToast(message, "error");
     }
   };
 
   return (
+    <>
     <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
       {/* ===== TAB NAVIGASI ===== */}
       <div className="border-b border-gray-200 px-2 md:px-5 sticky top-0 z-10 bg-white">
@@ -209,7 +211,7 @@ export default function Pengaturan() {
                 <input
                   type="text"
                   value={localSettings.kodeGereja}
-                  onChange={(e) => setLocalSettings({ ...localSettings, kodeGereja: e.target.value })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, kodeGereja: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -218,7 +220,7 @@ export default function Pengaturan() {
                 <textarea
                   rows={2}
                   value={localSettings.alamat}
-                  onChange={(e) => setLocalSettings({ ...localSettings, alamat: e.target.value })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, alamat: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -227,7 +229,7 @@ export default function Pengaturan() {
                 <input
                   type="text"
                   value={localSettings.telp}
-                  onChange={(e) => setLocalSettings({ ...localSettings, telp: e.target.value })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, telp: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -236,7 +238,7 @@ export default function Pengaturan() {
                 <input
                   type="email"
                   value={localSettings.email}
-                  onChange={(e) => setLocalSettings({ ...localSettings, email: e.target.value })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, email: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Masukkan email khusus gereja"
                 />
@@ -246,7 +248,7 @@ export default function Pengaturan() {
                 <input
                   type="text"
                   value={localSettings.website}
-                  onChange={(e) => setLocalSettings({ ...localSettings, website: e.target.value })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, website: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -277,7 +279,7 @@ export default function Pengaturan() {
                 <input
                   type="text"
                   value={localSettings.username || ""}
-                  onChange={(e) => setLocalSettings({ ...localSettings, username: e.target.value })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, username: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -338,12 +340,7 @@ export default function Pengaturan() {
               <div className="p-4 bg-red-50 rounded-xl border border-red-200">
                 <h4 className="font-semibold mb-2 text-red-800">Reset</h4>
                 <button
-                  onClick={() => {
-                    if (window.confirm("Yakin reset semua data?")) {
-                      localStorage.clear();
-                      window.location.reload();
-                    }
-                  }}
+                  onClick={() => setConfirmationAction("reset")}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm"
                 >
                   Reset Semua
@@ -362,7 +359,7 @@ export default function Pengaturan() {
                 <input
                   type="checkbox"
                   checked={localSettings.notifWA}
-                  onChange={(e) => setLocalSettings({ ...localSettings, notifWA: e.target.checked })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, notifWA: e.target.checked }))}
                   className="rounded"
                 />{" "}
                 WhatsApp
@@ -371,7 +368,7 @@ export default function Pengaturan() {
                 <input
                   type="checkbox"
                   checked={localSettings.notifSMS}
-                  onChange={(e) => setLocalSettings({ ...localSettings, notifSMS: e.target.checked })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, notifSMS: e.target.checked }))}
                   className="rounded"
                 />{" "}
                 SMS
@@ -380,7 +377,7 @@ export default function Pengaturan() {
                 <input
                   type="checkbox"
                   checked={localSettings.notifEmail}
-                  onChange={(e) => setLocalSettings({ ...localSettings, notifEmail: e.target.checked })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, notifEmail: e.target.checked }))}
                   className="rounded"
                 />{" "}
                 Email
@@ -410,7 +407,7 @@ export default function Pengaturan() {
                 <label className="block text-sm font-semibold mb-1">Ukuran Font</label>
                 <select
                   value={localSettings.fontSize}
-                  onChange={(e) => setLocalSettings({ ...localSettings, fontSize: e.target.value })}
+                  onChange={(e) => setDraftSettings((prev) => ({ ...prev, fontSize: e.target.value }))}
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="small">Kecil</option>
@@ -494,7 +491,7 @@ export default function Pengaturan() {
                       </div>
                     ) : (
                       <div className="w-[200px] h-[200px] bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center text-gray-500 text-sm text-center px-4">
-                        Bot WhatsApp sudah terhubung.
+                        {botStatus || "Menunggu status QR dari server..."}
                       </div>
                     )}
                   </div>
@@ -511,5 +508,20 @@ export default function Pengaturan() {
         )}
       </div>
     </div>
+    <ConfirmationModalPortal
+        isOpen={confirmationAction !== null}
+        onClose={() => setConfirmationAction(null)}
+        onConfirm={handleConfirmAction}
+        title={confirmationAction === "reset" ? "Reset data lokal?" : "Keluar dari akun?"}
+        description={
+          confirmationAction === "reset"
+            ? "Semua data di penyimpanan browser akan dihapus dan halaman dimuat ulang. Data di server tidak terhapus."
+            : "Sesi login di perangkat ini akan dihapus dan Anda diarahkan ke halaman login."
+        }
+        confirmText={confirmationAction === "reset" ? "Ya, Reset" : "Ya, Keluar"}
+        cancelText="Tidak"
+        variant={confirmationAction === "reset" ? "danger" : "warning"}
+      />
+    </>
   );
 }

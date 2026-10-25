@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { useAdmin, Jadwal as JadwalType } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
+import ConfirmationModalPortal from '../components/ConfirmationModalPortal';
 
 export default function Jadwal() {
   const { showToast } = useToast();
   const { jadwal, pelayan, addJadwal, updateJadwal, deleteJadwal } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nama: '',
     tanggal: '',
@@ -45,6 +47,12 @@ export default function Jadwal() {
     setIsModalOpen(false);
   };
 
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    await deleteJadwal(pendingDeleteId);
+    showToast('Jadwal berhasil dihapus!', 'success');
+  };
+
   const statusColor = {
     'Terjadwal': 'bg-amber-100 text-amber-700',
     'Berlangsung': 'bg-blue-100 text-blue-700',
@@ -71,7 +79,7 @@ export default function Jadwal() {
         </div>
         <div className="p-4 overflow-x-auto">
           {jadwal.length > 0 ? (
-            <table className="w-full text-sm modern-table">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead>
                 <tr>
                   <th>Tanggal</th>
@@ -86,19 +94,19 @@ export default function Jadwal() {
               <tbody>
                 {jadwal.map((item) => (
                   <tr key={item.id}>
-                    <td className="font-semibold">
+                    <td data-label="Tanggal" className="font-semibold">
                       {new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
-                    <td>{item.waktu || '-'}</td>
-                    <td>{item.nama}</td>
-                    <td>{item.lokasi || '-'}</td>
-                    <td>{item.pj || '-'}</td>
-                    <td>
+                    <td data-label="Waktu">{item.waktu || '-'}</td>
+                    <td data-label="Kegiatan">{item.nama}</td>
+                    <td data-label="Lokasi">{item.lokasi || '-'}</td>
+                    <td data-label="PJ">{item.pj || '-'}</td>
+                    <td data-label="Status">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor[item.status as keyof typeof statusColor] || ''}`}>
                         {item.status}
                       </span>
                     </td>
-                    <td className="text-center space-x-2">
+                    <td data-label="Aksi" className="text-center space-x-2">
                       <button
                         onClick={() => handleOpenModal(item)}
                         className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"
@@ -106,12 +114,7 @@ export default function Jadwal() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={async () => {
-                          if (confirm('Hapus?')) {
-                            await deleteJadwal(item.id);
-                            showToast('Jadwal berhasil dihapus!', 'success');
-                          }
-                        }}
+                        onClick={() => setPendingDeleteId(item.id)}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -200,6 +203,16 @@ export default function Jadwal() {
           </div>
         </div>
       </Modal>
+      <ConfirmationModalPortal
+        isOpen={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Hapus jadwal?"
+        description="Jadwal kegiatan yang dihapus tidak dapat dipulihkan."
+        confirmText="Ya, Hapus"
+        cancelText="Tidak"
+        variant="danger"
+      />
     </div>
   );
 }

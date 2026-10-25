@@ -63,7 +63,15 @@ export default function DataJemaat() {
       const res = await api.get('/jemaat/dashboard');
       const normalized = (res.data.jemaat || []).map((item: any) => ({
         ...item,
+        nama: item.nama || item.nama_lengkap || '',
         gender: item.gender || item.jenisKelamin || item.jenis_kelamin || 'Pria',
+        tempatLahir: item.tempatLahir || item.tempat_lahir || '',
+        tglLahir: item.tglLahir || item.tgl_lahir || '',
+        tempatBaptis: item.tempatBaptis || item.tempat_baptis || '',
+        tglBaptis: item.tglBaptis || item.tgl_baptis || '',
+        tempatSidi: item.tempatSidi || item.tempat_sidi || '',
+        tglSidi: item.tglSidi || item.tgl_sidi || '',
+        telepon: item.telepon || '',
         lingkungan: item.lingkungan || '',
       }));
       setJemaatList(normalized);
@@ -111,8 +119,8 @@ export default function DataJemaat() {
     if (item) {
       setEditingId(item.id);
       setFormData({
-        nama: item.nama,
-        gender: item.gender,
+        nama: item.nama || '',
+        gender: item.gender || 'Pria',
         tempatLahir: item.tempatLahir || '',
         tglLahir: item.tglLahir || '',
         tempatBaptis: item.tempatBaptis || '',
@@ -248,7 +256,7 @@ export default function DataJemaat() {
         {/* ===== TABEL UTAMA: DINAMIS (JANGAN HARDCODE) ===== */}
         <div className="p-4 overflow-x-auto">
           {filteredJemaat.length > 0 ? (
-            <table className="w-full text-sm modern-table">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead>
                 <tr>
                   <th>Nama</th>
@@ -266,19 +274,19 @@ export default function DataJemaat() {
                 {filteredJemaat.map((item: Jemaat) => (
                   <tr key={item.id}>
                     {/* Mengambil nama dinamis dari database Supabase */}
-                    <td className="font-semibold">{item.nama}</td>
-                    <td>{item.gender}</td>
-                    <td>{item.tempatLahir ? `${item.tempatLahir}, ` : ''}{item.tglLahir || '-'}</td>
-                    <td>{item.tempatBaptis ? `${item.tempatBaptis}, ` : ''}{item.tglBaptis || '-'}</td>
-                    <td>{item.tempatSidi ? `${item.tempatSidi}, ` : ''}{item.tglSidi || '-'}</td>
-                    <td className="text-xs">{item.alamat || '-'}</td>
-                    <td>{item.lingkungan || '-'}</td>
-                    <td>
+                    <td data-label="Nama" className="font-semibold">{item.nama}</td>
+                    <td data-label="Gender">{item.gender}</td>
+                    <td data-label="Lahir">{item.tempatLahir ? `${item.tempatLahir}, ` : ''}{item.tglLahir || '-'}</td>
+                    <td data-label="Baptis">{item.tempatBaptis ? `${item.tempatBaptis}, ` : ''}{item.tglBaptis || '-'}</td>
+                    <td data-label="Sidi">{item.tempatSidi ? `${item.tempatSidi}, ` : ''}{item.tglSidi || '-'}</td>
+                    <td data-label="Alamat" className="text-xs">{item.alamat || '-'}</td>
+                    <td data-label="Lingkungan">{item.lingkungan || '-'}</td>
+                    <td data-label="Status">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${item.status === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                         {item.status}
                       </span>
                     </td>
-                    <td className="text-center space-x-2">
+                    <td data-label="Aksi" className="text-center space-x-2">
                       <button
                         onClick={() => handleOpenModal(item)}
                         className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"

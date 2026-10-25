@@ -1,5 +1,7 @@
 'use client';
 
+import { createPortal } from 'react-dom';
+
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -9,9 +11,9 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, title, onSave, children }: ModalProps) {
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-[#0f1a2e] mb-5">{title}</h2>
@@ -33,6 +35,7 @@ export default function Modal({ isOpen, onClose, title, onSave, children }: Moda
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

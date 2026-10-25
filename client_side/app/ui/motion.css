@@ -1,0 +1,28 @@
+/* Kilau, kilap, dan transisi GerejaPintar. Hanya transform + opacity. */
+@keyframes gp-shine{0%{transform:translateX(-130%) skewX(-18deg)}60%,100%{transform:translateX(230%) skewX(-18deg)}}
+@keyframes gp-twinkle{0%,100%{opacity:.1;transform:scale(.5) rotate(0)}50%{opacity:1;transform:scale(1) rotate(45deg)}}
+@keyframes gp-shimmer{to{background-position:200% center}}
+@keyframes gp-page-in{from{opacity:0;transform:translateY(14px) scale(.995)}to{opacity:1;transform:none}}
+@keyframes gp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes gp-lower-third{0%{opacity:0;transform:translateX(-40px)}8%,70%{opacity:1;transform:none}80%,100%{opacity:0;transform:translateX(-40px)}}
+@keyframes gp-pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}50%{box-shadow:0 0 0 7px rgba(239,68,68,0)}}
+@keyframes gp-ticker{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+.gp-shine{position:relative;overflow:hidden;isolation:isolate}
+.gp-shine::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.5) 50%,transparent 62%);transform:translateX(-130%) skewX(-18deg)}
+.gp-shine:hover::after{animation:gp-shine .9s ease}
+.gp-shine-loop::after{animation:gp-shine 3.6s ease-in-out infinite}
+.gp-shimmer-text{background:linear-gradient(90deg,#b8891f,#f6e08a,#c9a24b,#f6e08a,#b8891f);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gp-shimmer 4s linear infinite}
+.gp-sparkle{position:absolute;width:var(--s,10px);height:var(--s,10px);background:#f6e08a;clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);animation:gp-twinkle var(--d,3s) ease-in-out var(--delay,0s) infinite;pointer-events:none}
+.gp-page-enter{animation:gp-page-in .45s cubic-bezier(.22,1,.36,1) both}
+.gp-float{animation:gp-float 6s ease-in-out infinite}
+.gp-lt{animation:gp-lower-third 8s ease-in-out infinite}
+.gp-pulse-dot{animation:gp-pulse-dot 1.8s ease-out infinite}
+.gp-ticker{animation:gp-ticker 18s linear infinite}
+.gp-reveal{opacity:0;transform:translateY(24px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1);transition-delay:var(--gp-delay,0ms)}
+.gp-reveal.is-visible{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+.gp-reveal{opacity:1;transform:none;transition:none}
+.gp-page-enter,.gp-float,.gp-lt,.gp-pulse-dot,.gp-ticker,.gp-sparkle,.gp-shine::after{animation:none!important}
+.gp-sparkle{opacity:.5}
+.gp-shimmer-text{animation:none;background:none;color:#c9a24b}
+}

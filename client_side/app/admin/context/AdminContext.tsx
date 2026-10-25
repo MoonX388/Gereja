@@ -40,6 +40,7 @@ export interface Jemaat {
   nikah: string;
   pekerjaan: string;
   status: string;
+  pelayans?: any[]; // Pelayan yang terhubung ke jemaat (read-only)
 }
 
 export interface Pelayan {
@@ -48,6 +49,10 @@ export interface Pelayan {
   jabatan: string;
   departemen: string;
   status: string;
+  jemaatId?: string;
+  userId?: string;
+  jemaat?: any; // Info jemaat dari join (read-only)
+  user?: any; // Info user dari join (read-only)
 }
 
 export interface Keuangan {
@@ -75,6 +80,7 @@ export interface Keluarga {
   kepala: string;
   alamat: string;
   jumlah: number;
+  anggota?: any[];
 }
 
 export interface Jadwal {
@@ -174,7 +180,7 @@ interface AdminContextType {
   addNotifikasi: (item: Omit<Notifikasi, 'id'>) => Promise<void>;
   updateNotifikasi?: (id: string, item: Omit<Notifikasi, 'id'>) => Promise<void>;
   deleteNotifikasi: (id: string) => Promise<void>;
-  updateSettings: (newSettings: Partial<Settings>) => void;
+  updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
   importData: (data: Partial<AdminBackupData>) => void;
 }
 
@@ -238,12 +244,35 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => getLocalSettings());
   const [currentPage, setCurrentPage] = useState('dashboard');
 
+  useEffect(() => {
+    const rootElement = document.documentElement;
+    const previousFontSize = rootElement.style.fontSize;
+    const fontSizes = { small: '14px', normal: '16px', large: '18px' };
+
+    rootElement.style.fontSize = fontSizes[settings.fontSize as keyof typeof fontSizes] || fontSizes.normal;
+
+    return () => {
+      rootElement.style.fontSize = previousFontSize;
+    };
+  }, [settings.fontSize]);
+
   const loadData = async <T,>(url: string, setState: React.Dispatch<React.SetStateAction<T[]>>, storageKey?: string) => {
     try {
       const res = await api.get(url);
-      setState(res.data);
+      console.log(`✅ Success load ${url}:`, res.data);
+
+      // Mapping khusus untuk jemaat: handle nama_lengkap -> nama
+      if (url === '/jemaat' && Array.isArray(res.data)) {
+        const mappedData = res.data.map((item: any) => ({
+          ...item,
+          nama: item.nama || item.nama_lengkap || 'Tanpa Nama',
+        }));
+        setState(mappedData);
+      } else {
+        setState(res.data);
+      }
     } catch (error: any) {
-      console.error(`Gagal load ${url}:`, error);
+      console.error(`❌ Gagal load ${url}:`, error);
       if (error.response?.status === 401) {
         console.error('Unauthorized: Token tidak valid atau kadaluarsa');
       } else if (error.response?.status === 403) {
@@ -301,8 +330,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/jemaat', item);
       setJemaat((prev) => [res.data, ...prev]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal tambah jemaat:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal menambahkan jemaat';
+      throw new Error(errorMessage);
     }
   };
   const updateJemaat = async (id: string, item: Omit<Jemaat, 'id'>) => {
@@ -310,8 +341,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       await api.put(`/jemaat/${id}`, item);
       setJemaat((prev) => prev.map((j) => (j.id === id ? { ...item, id } : j)));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal update jemaat:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal mengupdate jemaat';
+      throw new Error(errorMessage);
     }
   };
   const deleteJemaat = async (id: string) => {
@@ -319,8 +352,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       await api.delete(`/jemaat/${id}`);
       setJemaat((prev) => prev.filter((j) => j.id !== id));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal hapus jemaat:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal menghapus jemaat';
+      throw new Error(errorMessage);
     }
   };
 
@@ -329,8 +364,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/pelayan', item);
       setPelayan((prev) => [res.data, ...prev]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal tambah pelayan:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal menambahkan pelayan';
+      throw new Error(errorMessage);
     }
   };
   const updatePelayan = async (id: string, item: Omit<Pelayan, 'id'>) => {
@@ -338,8 +375,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       await api.put(`/pelayan/${id}`, item);
       setPelayan((prev) => prev.map((p) => (p.id === id ? { ...item, id } : p)));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal update pelayan:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal mengupdate pelayan';
+      throw new Error(errorMessage);
     }
   };
   const deletePelayan = async (id: string) => {
@@ -347,8 +386,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       await api.delete(`/pelayan/${id}`);
       setPelayan((prev) => prev.filter((p) => p.id !== id));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal hapus pelayan:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal menghapus pelayan';
+      throw new Error(errorMessage);
     }
   };
 
@@ -413,8 +454,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/keluarga', item);
       setKeluarga((prev) => [res.data, ...prev]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Gagal tambah keluarga:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal menambahkan keluarga';
+      throw new Error(errorMessage);
     }
   };
   const updateKeluarga = async (id: string, item: Omit<Keluarga, 'id'>) => {
@@ -498,13 +541,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     saveToLocal('gd_absensi', updated);
   };
 
-  const updateSettings = (newSettings: Partial<Settings>) => {
-    const updated = { ...settings, ...newSettings };
+  const updateSettings = async (newSettings: Partial<Settings>) => {
+    if (isDummyModeEnabled()) {
+      const updated = { ...settings, ...newSettings };
+      setSettings(updated);
+      saveToLocal(STORAGE_KEYS.settings, updated);
+      return;
+    }
+
+    const res = await api.patch('/settings', newSettings);
+    const updated = { ...settings, ...newSettings, ...res.data };
     setSettings(updated);
     saveToLocal(STORAGE_KEYS.settings, updated);
-    void api.patch('/settings', newSettings).catch((error) => {
-      console.error('Gagal menyimpan /settings:', error);
-    });
   };
 
   const importData = (data: Partial<AdminBackupData>) => {

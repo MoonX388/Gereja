@@ -4,43 +4,72 @@ import { useState } from 'react';
 import { useAdmin, Keluarga as KeluargaType } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
+import ConfirmationModalPortal from '../components/ConfirmationModalPortal';
 
 export default function KartuKeluarga() {
   const { showToast } = useToast();
   const { keluarga, jemaat, addKeluarga, updateKeluarga, deleteKeluarga } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     noKK: '',
     kepala: '',
     alamat: '',
     jumlah: 1,
+    anggota: [] as string[],
   });
+
+  const handleToggleAnggota = (nama: string) => {
+    setFormData(prev => ({
+      ...prev,
+      anggota: prev.anggota.includes(nama)
+        ? prev.anggota.filter(a => a !== nama)
+        : [...prev.anggota, nama]
+    }));
+  };
 
   const handleOpenModal = (item?: KeluargaType) => {
     if (item) {
       setEditingId(item.id);
-      setFormData({ noKK: item.noKK, kepala: item.kepala, alamat: item.alamat, jumlah: item.jumlah });
+      setFormData({
+        noKK: item.noKK,
+        kepala: item.kepala,
+        alamat: item.alamat,
+        jumlah: item.jumlah,
+        anggota: item.anggota?.map((a: any) => a.nama || a.nama_lengkap) || []
+      });
     } else {
       setEditingId(null);
-      setFormData({ noKK: '', kepala: '', alamat: '', jumlah: 1 });
+      setFormData({ noKK: '', kepala: '', alamat: '', jumlah: 1, anggota: [] });
     }
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.noKK.trim()) {
       showToast('No. KK wajib diisi', 'error');
       return;
     }
-    if (editingId !== null) {
-      updateKeluarga(editingId, formData);
-      showToast('Kartu keluarga berhasil diperbarui!', 'success');
-    } else {
-      addKeluarga(formData);
-      showToast('Kartu keluarga berhasil ditambahkan!', 'success');
+    try {
+      if (editingId !== null) {
+        await updateKeluarga(editingId, formData);
+        showToast('Kartu keluarga berhasil diperbarui!', 'success');
+      } else {
+        await addKeluarga(formData);
+        showToast('Kartu keluarga berhasil ditambahkan!', 'success');
+      }
+      setIsModalOpen(false);
+    } catch (error: any) {
+      const errorMessage = error.message || 'Gagal menyimpan data keluarga';
+      showToast(errorMessage, 'error');
     }
-    setIsModalOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    await deleteKeluarga(pendingDeleteId);
+    showToast('Kartu keluarga berhasil dihapus!', 'success');
   };
 
   return (
@@ -60,12 +89,13 @@ export default function KartuKeluarga() {
         </div>
         <div className="p-4 overflow-x-auto">
           {keluarga.length > 0 ? (
-            <table className="w-full text-sm modern-table">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead>
                 <tr>
                   <th>No. KK</th>
                   <th>Kepala Keluarga</th>
                   <th>Alamat</th>
+                  <th>Anggota</th>
                   <th>Jumlah</th>
                   <th className="text-center">Aksi</th>
                 </tr>
@@ -73,11 +103,21 @@ export default function KartuKeluarga() {
               <tbody>
                 {keluarga.map((item) => (
                   <tr key={item.id}>
-                    <td className="font-mono font-semibold">{item.noKK}</td>
-                    <td>{item.kepala || '-'}</td>
-                    <td className="text-xs">{item.alamat || '-'}</td>
-                    <td>{item.jumlah} orang</td>
-                    <td className="text-center space-x-2">
+                    <td data-label="No. KK" className="font-mono font-semibold">{item.noKK}</td>
+                    <td data-label="Kepala Keluarga">{item.kepala || '-'}</td>
+                    <td data-label="Alamat" className="text-xs">{item.alamat || '-'}</td>
+                    <td data-label="Anggota" className="text-xs">
+                      {item.anggota && item.anggota.length > 0
+                        ? item.anggota.map((a: any, idx: number) => (
+                            <span key={idx} className="inline-block bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs mr-1 mb-1">
+                              {a.nama || a.nama_lengkap}
+                            </span>
+                          ))
+                        : <span className="text-gray-400">Belum ada anggota</span>
+                      }
+                    </td>
+                    <td data-label="Jumlah">{item.jumlah} orang</td>
+                    <td data-label="Aksi" className="text-center space-x-2">
                       <button
                         onClick={() => handleOpenModal(item)}
                         className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded"
@@ -85,12 +125,7 @@ export default function KartuKeluarga() {
                         <i className="fa-solid fa-pen-to-square"></i>
                       </button>
                       <button
-                        onClick={async () => {
-                          if (confirm('Hapus?')) {
-                            await deleteKeluarga(item.id);
-                            showToast('Kartu keluarga berhasil dihapus!', 'success');
-                          }
-                        }}
+                        onClick={() => setPendingDeleteId(item.id)}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -133,8 +168,8 @@ export default function KartuKeluarga() {
               className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
             >
               <option value="">-- Pilih --</option>
-              {jemaat.map((j) => (
-                <option key={j.id} value={j.nama}>{j.nama}</option>
+              {jemaat.map((j: any) => (
+                <option key={j.id} value={j.nama || j.nama_lengkap}>{j.nama || j.nama_lengkap}</option>
               ))}
             </select>
           </div>
@@ -157,8 +192,39 @@ export default function KartuKeluarga() {
               className="w-full border-2 border-gray-200 rounded-lg px-3 py-2"
             />
           </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Anggota Keluarga</label>
+            <div className="max-h-40 overflow-y-auto border-2 border-gray-200 rounded-lg p-3 space-y-2">
+              {jemaat.length > 0 ? (
+                jemaat.map((j: any) => (
+                  <label key={j.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.anggota.includes(j.nama || j.nama_lengkap)}
+                      onChange={() => handleToggleAnggota(j.nama || j.nama_lengkap)}
+                      className="w-4 h-4 text-blue-600 rounded"
+                    />
+                    <span className="text-sm">{j.nama || j.nama_lengkap}</span>
+                  </label>
+                ))
+              ) : (
+                <p className="text-sm text-gray-400">Belum ada data jemaat</p>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">{formData.anggota.length} anggota dipilih</p>
+          </div>
         </div>
       </Modal>
+      <ConfirmationModalPortal
+        isOpen={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Hapus kartu keluarga?"
+        description="Data kartu keluarga yang dihapus tidak dapat dipulihkan."
+        confirmText="Ya, Hapus"
+        cancelText="Tidak"
+        variant="danger"
+      />
     </div>
   );
 }

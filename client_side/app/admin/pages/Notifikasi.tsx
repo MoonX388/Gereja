@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
+import ConfirmationModalPortal from '../components/ConfirmationModalPortal';
 
 export default function Notifikasi() {
   const { showToast } = useToast();
   const { notifikasi, addNotifikasi, deleteNotifikasi } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     judul: '',
     pesan: '',
@@ -32,6 +34,12 @@ export default function Notifikasi() {
     setIsModalOpen(false);
   };
 
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    await deleteNotifikasi(pendingDeleteId);
+    showToast('Notifikasi berhasil dihapus!', 'success');
+  };
+
   return (
     <div>
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
@@ -51,7 +59,7 @@ export default function Notifikasi() {
         </div>
         <div className="p-4 overflow-x-auto">
           {notifikasi.length > 0 ? (
-            <table className="w-full text-sm modern-table">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead>
                 <tr>
                   <th>Tanggal</th>
@@ -64,18 +72,13 @@ export default function Notifikasi() {
               <tbody>
                 {notifikasi.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.tanggal}</td>
-                    <td className="font-semibold">{item.judul}</td>
-                    <td>{item.target}</td>
-                    <td>{item.via}</td>
-                    <td className="text-center space-x-2">
+                    <td data-label="Tanggal">{item.tanggal}</td>
+                    <td data-label="Judul" className="font-semibold">{item.judul}</td>
+                    <td data-label="Target">{item.target}</td>
+                    <td data-label="Via">{item.via}</td>
+                    <td data-label="Aksi" className="text-center space-x-2">
                       <button
-                        onClick={async () => {
-                          if (confirm('Hapus?')) {
-                            await deleteNotifikasi(item.id);
-                            showToast('Notifikasi berhasil dihapus!', 'success');
-                          }
-                        }}
+                        onClick={() => setPendingDeleteId(item.id)}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -143,6 +146,16 @@ export default function Notifikasi() {
           </div>
         </div>
       </Modal>
+      <ConfirmationModalPortal
+        isOpen={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Hapus notifikasi?"
+        description="Notifikasi yang dihapus tidak dapat dipulihkan."
+        confirmText="Ya, Hapus"
+        cancelText="Tidak"
+        variant="danger"
+      />
     </div>
   );
 }

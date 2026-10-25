@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { useAdmin } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
+import ConfirmationModalPortal from './ConfirmationModalPortal';
 
 export default function Header({
   onMenuClick,
@@ -18,6 +19,7 @@ export default function Header({
   const importMenuRef = useRef<HTMLDivElement>(null);
   const [currentDate, setCurrentDate] = useState('');
   const [isImportMenuOpen, setIsImportMenuOpen] = useState(false);
+  const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
 
   useEffect(() => {
     const updateDate = () => {
@@ -164,9 +166,6 @@ export default function Header({
   };
 
   const handleResetData = () => {
-    const confirmed = window.confirm('Reset semua data admin ke kondisi awal? Tindakan ini tidak bisa dibatalkan.');
-    if (!confirmed) return;
-
     importData({
       jemaat: [],
       pelayan: [],
@@ -225,6 +224,7 @@ export default function Header({
   };
 
   return (
+    <>
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30 px-4 md:px-5 py-3 flex justify-between items-center flex-wrap gap-2">
       <div className="flex items-center gap-3">
         <button
@@ -290,7 +290,7 @@ export default function Header({
         </button>
 
         <button
-          onClick={handleResetData}
+          onClick={() => setIsResetConfirmationOpen(true)}
           title="Reset Data"
           className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1"
         >
@@ -299,5 +299,16 @@ export default function Header({
         </button>
       </div>
     </header>
+    <ConfirmationModalPortal
+      isOpen={isResetConfirmationOpen}
+      onClose={() => setIsResetConfirmationOpen(false)}
+      onConfirm={handleResetData}
+      title="Reset semua data admin?"
+      description="Semua data admin akan dikembalikan ke kondisi awal. Tindakan ini tidak dapat dibatalkan."
+      confirmText="Ya, Reset"
+      cancelText="Tidak"
+      variant="danger"
+    />
+    </>
   );
 }

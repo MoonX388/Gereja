@@ -48,5 +48,5 @@ export default function AdminPage() {
     }
   };
 
-  return renderPage();
+  return <div key={currentPage} className="gp-page-enter">{renderPage()}</div>;
 }

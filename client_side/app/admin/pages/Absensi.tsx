@@ -4,11 +4,13 @@ import { useMemo, useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
 import { useToast } from '@/app/components/ToastContext';
 import Modal from '../components/Modal';
+import ConfirmationModalPortal from '../components/ConfirmationModalPortal';
 
 export default function Absensi() {
   const { showToast } = useToast();
   const { absensi, jadwal, jemaat, addAbsensi, deleteAbsensi } = useAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     kegiatan: '',
     nama: '',
@@ -34,6 +36,12 @@ export default function Absensi() {
     addAbsensi(formData);
     showToast('Absensi berhasil dicatat!', 'success');
     setIsModalOpen(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (pendingDeleteId === null) return;
+    await deleteAbsensi(pendingDeleteId);
+    showToast('Catatan absensi berhasil dihapus!', 'success');
   };
 
   const statusColor = {
@@ -107,12 +115,7 @@ export default function Absensi() {
                     </td>
                     <td className="text-center space-x-2">
                       <button
-                        onClick={async () => {
-                          if (confirm('Hapus?')) {
-                            await deleteAbsensi(item.id);
-                            showToast('Catatan absensi berhasil dihapus!', 'success');
-                          }
-                        }}
+                        onClick={() => setPendingDeleteId(item.id)}
                         className="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -186,6 +189,16 @@ export default function Absensi() {
           </div>
         </div>
       </Modal>
+      <ConfirmationModalPortal
+        isOpen={pendingDeleteId !== null}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Hapus catatan absensi?"
+        description="Catatan absensi yang dihapus tidak dapat dipulihkan."
+        confirmText="Ya, Hapus"
+        cancelText="Tidak"
+        variant="danger"
+      />
     </div>
   );
 }

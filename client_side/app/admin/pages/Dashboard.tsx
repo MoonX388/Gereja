@@ -81,13 +81,13 @@ export default function Dashboard() {
   // ==========================================
   // LOGIKA DISTRIBUSI JEMAAT
   // ==========================================
-  const pria = jemaat.filter((i) => {
-    const g = String(i.gender).toLowerCase().trim();
+  const pria = jemaat.filter((i: any) => {
+    const g = String(i.gender || i.jenis_kelamin).toLowerCase().trim();
     return g === 'pria' || g === 'laki-laki';
   }).length;
 
-  const wanita = jemaat.filter((i) => {
-    const g = String(i.gender).toLowerCase().trim();
+  const wanita = jemaat.filter((i: any) => {
+    const g = String(i.gender || i.jenis_kelamin).toLowerCase().trim();
     return g === 'wanita' || g === 'perempuan';
   }).length;
 
@@ -110,9 +110,11 @@ export default function Dashboard() {
     limitDate.setDate(today.getDate() + 7);
 
     return jemaat
-      .map((item) => {
-        if (!item.tglLahir) return null;
-        const [year, month, day] = item.tglLahir.split('-').map(Number);
+      .map((item: any) => {
+        const tglLahir = item.tglLahir || item.tgl_lahir;
+        const nama = item.nama || item.nama_lengkap || '';
+        if (!tglLahir) return null;
+        const [year, month, day] = tglLahir.split('-').map(Number);
         if (!year || !month || !day) return null;
 
         const birthday = new Date(today.getFullYear(), month - 1, day);
@@ -124,6 +126,8 @@ export default function Dashboard() {
 
         return {
           ...item,
+          nama: nama,
+          tglLahir: tglLahir,
           birthdayDate: birthday,
         };
       })
@@ -135,27 +139,52 @@ export default function Dashboard() {
   return (
     <div>
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 min-w-0">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${stat.color}`}>
-              <i className={`fa-solid ${stat.icon}`}></i>
-            </div>
-            {/* 🛡️ PERBAIKAN 3: flex-1 dan min-w-0 disamakan secara merata agar tulisan nominal panjang tidak hilang terpotong */}
-            <div className="min-w-0 flex-1">
-              <h3 className="font-bold text-gray-900 text-base sm:text-lg md:text-xl truncate" title={String(stat.value)}>
-                {stat.value}
-              </h3>
-              <p className="text-xs text-gray-500 truncate">{stat.label}</p>
-            </div>
-          </div>
-        ))}
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6">
+  {stats.map((stat, idx) => (
+    <div key={idx} className="relative group cursor-pointer">
+      
+      {/* --- LAYER 1: Base Card (Normal, terpotong jika panjang) --- */}
+      <div className="gp-shine bg-white rounded-xl shadow p-3 md:p-4 flex items-center gap-3 h-full w-full">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${stat.color}`}>
+          <i className={`fa-solid ${stat.icon}`}></i>
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-bold text-gray-900 text-base sm:text-lg md:text-xl truncate">
+            {stat.value}
+          </h3>
+          <p className="text-xs text-gray-500 truncate">{stat.label}</p>
+        </div>
       </div>
+
+      {/* --- LAYER 2: Hover Card (Memanjang HANYA jika teksnya kepanjangan) --- */}
+      <div 
+        aria-hidden="true" 
+        // min-w-full = minimal selebar card asli. w-max = melebar otomatis HANYA jika teksnya panjang.
+        className="absolute top-0 left-0 h-full min-w-full w-max flex items-center gap-3 rounded-xl bg-white p-3 md:p-4 opacity-0 pointer-events-none transition-all duration-300 ease-out group-hover:opacity-100 group-hover:shadow-2xl group-hover:-translate-y-1 z-0 group-hover:z-50 border border-gray-100"
+      >
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 ease-out group-hover:scale-110 ${stat.color}`}>
+          <i className={`fa-solid ${stat.icon}`}></i>
+        </div>
+        
+        {/* whitespace-nowrap membuat teks tidak turun, memaksa w-max bekerja jika teks melebihi ukuran card */}
+        <div className="flex-1 whitespace-nowrap">
+          <span className="block font-bold text-gray-900 text-base sm:text-lg md:text-xl leading-none">
+            {stat.value}
+          </span>
+          <span className="block text-xs md:text-sm text-gray-500 mt-1">
+            {stat.label}
+          </span>
+        </div>
+      </div>
+      
+    </div>
+  ))}
+</div>
 
       {/* Area Grafik */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Chart Keuangan */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
+        <div className="gp-shine bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5 transition-shadow duration-300 hover:shadow-lg">
           <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
             <i className="fa-solid fa-chart-line mr-2 text-[#e8c547]"></i>
             Grafik Keuangan Tahunan
@@ -181,7 +210,7 @@ export default function Dashboard() {
         </div>
 
         {/* Chart Jemaat */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
+        <div className="gp-shine bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5 transition-shadow duration-300 hover:shadow-lg">
           <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
             <i className="fa-solid fa-chart-pie mr-2 text-[#e8c547]"></i>
             Distribusi Jemaat
@@ -212,7 +241,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
+        <div className="gp-shine bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5 transition-shadow duration-300 hover:shadow-lg">
           <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
             <i className="fa-solid fa-cake-candles mr-2 text-[#e8c547]"></i>
             Ulang Tahun 1 Minggu ke Depan
@@ -237,10 +266,10 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5">
+        <div className="gp-shine bg-white rounded-2xl shadow-md border border-gray-100 p-4 md:p-5 transition-shadow duration-300 hover:shadow-lg">
           <h3 className="text-lg font-bold text-[#0f1a2e] mb-4">
             <i className="fa-solid fa-church mr-2 text-[#e8c547]"></i>
-            Kehadiran Jemaat Hari Ini
+            Kehadiran Jemaat Minggu Ini
           </h3>
           <div className="rounded-xl bg-[#f7f9fc] p-4 text-center">
             <p className="text-4xl font-bold text-[#1e3a5f]">{jemaat.length}</p>
@@ -259,7 +288,7 @@ export default function Dashboard() {
         </div>
         <div className="p-4 overflow-x-auto">
           {jadwal.slice(0, 5).length > 0 ? (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm modern-table responsive-table">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left">Tanggal</th>
@@ -271,12 +300,12 @@ export default function Dashboard() {
               <tbody>
                 {jadwal.slice(0, 5).map((item) => (
                   <tr key={item.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">
+                    <td data-label="Tanggal" className="px-4 py-2">
                       {item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
                     </td>
-                    <td className="px-4 py-2 font-semibold">{item.nama}</td>
-                    <td className="px-4 py-2">{item.lokasi || '-'}</td>
-                    <td className="px-4 py-2">
+                    <td data-label="Kegiatan" className="px-4 py-2 font-semibold">{item.nama}</td>
+                    <td data-label="Lokasi" className="px-4 py-2">{item.lokasi || '-'}</td>
+                    <td data-label="Status" className="px-4 py-2">
                       <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">{item.status}</span>
                     </td>
                   </tr>
